@@ -18,7 +18,7 @@ import {
   House, Library, CircleUser,
   ChevronRight, ChevronLeft, X as XIkon, RotateCcw,
   Square, SquareCheck, Sun, Moon as AyIkon, Search, Settings, Cloud,
-  Check, Clock, Layers, ListChecks, PenLine,
+  Check, Clock, Layers, ListChecks,
   Footprints, Flame, CalendarCheck, ShieldCheck, Trophy, Medal, BookMarked,
   Sparkles, Rocket, BrainCircuit, Timer, ChartColumn, Star, Zap, Target, BookOpenCheck,
 } from 'lucide-react-native';
@@ -106,48 +106,8 @@ const sikleriSirala = (secenekler, kartId) => {
   return liste;
 };
 
-// ============ METİN KARŞILAŞTIRMA (yazarak cevaplama) ============
-// Türkçe harfleri sadeleştirip noktalama ve boşlukları atarak karşılaştırır.
-const TR_HARF = {
-  'ı': 'i', 'İ': 'i', 'I': 'i', 'ğ': 'g', 'Ğ': 'g', 'ü': 'u', 'Ü': 'u',
-  'ş': 's', 'Ş': 's', 'ö': 'o', 'Ö': 'o', 'ç': 'c', 'Ç': 'c', 'â': 'a', 'î': 'i', 'û': 'u',
-};
-const sadelestir = (m) => String(m || '')
-  .split('').map(c => TR_HARF[c] || c).join('')
-  .toLowerCase().replace(/[^a-z0-9]/g, '');
-
-// İki metin arasındaki düzenleme mesafesi (küçük yazım hatalarını affetmek için)
-const mesafe = (a, b) => {
-  if (a === b) return 0;
-  if (!a.length) return b.length;
-  if (!b.length) return a.length;
-  let onceki = Array.from({ length: b.length + 1 }, (_, i) => i);
-  for (let i = 1; i <= a.length; i++) {
-    const simdi = [i];
-    for (let j = 1; j <= b.length; j++) {
-      simdi[j] = Math.min(
-        onceki[j] + 1,
-        simdi[j - 1] + 1,
-        onceki[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)
-      );
-    }
-    onceki = simdi;
-  }
-  return onceki[b.length];
-};
-
-// Uzunluğa göre birkaç harflik yazım hatasını doğru sayar
-const cevapEslesiyor = (yazilan, dogruCevap) => {
-  const a = sadelestir(yazilan);
-  const b = sadelestir(dogruCevap);
-  if (!a || !b) return false;
-  if (a === b) return true;
-  const tolerans = b.length <= 5 ? 0 : b.length <= 10 ? 1 : 2;
-  return mesafe(a, b) <= tolerans;
-};
-
 // ============================================================
-// EN ZAYIF ÜNİTE — hem ana sayfa hem profil kullanır
+// EN ZAYIF ÜNİTE — ana sayfa ve profil ortak kullanır
 // En az 4 kartı olan ve çalışılmış üniteler arasından seçer
 // ============================================================
 function uniteIstatistigi(srs) {
@@ -165,6 +125,17 @@ function uniteIstatistigi(srs) {
     .map(u => ({ ...u, pct: Math.round((u.ogrenilen / u.toplam) * 100) }))
     .sort((a, b) => a.pct - b.pct);
 }
+
+// ============ METİN SADELEŞTİRME (arama için) ============
+// Türkçe harfleri sadeleştirip noktalama ve boşlukları atar,
+// böylece "gokturk" araması "Göktürk" kartını bulur.
+const TR_HARF = {
+  'ı': 'i', 'İ': 'i', 'I': 'i', 'ğ': 'g', 'Ğ': 'g', 'ü': 'u', 'Ü': 'u',
+  'ş': 's', 'Ş': 's', 'ö': 'o', 'Ö': 'o', 'ç': 'c', 'Ç': 'c', 'â': 'a', 'î': 'i', 'û': 'u',
+};
+const sadelestir = (m) => String(m || '')
+  .split('').map(c => TR_HARF[c] || c).join('')
+  .toLowerCase().replace(/[^a-z0-9]/g, '');
 
 // ============ HAPTİK ============
 const titre = {
@@ -616,7 +587,7 @@ function ModSecim({ ders, onBaslat, onGeri, srs }) {
           style={{
             backgroundColor: P.mor, borderRadius: 20,
             borderBottomWidth: 6, borderBottomColor: P.morKoyu,
-            padding: 18, marginBottom: 14, opacity: quizUygun ? 1 : 0.4,
+            padding: 18, opacity: quizUygun ? 1 : 0.4,
             flexDirection: 'row', alignItems: 'center',
           }}>
           <View style={{
@@ -629,28 +600,6 @@ function ModSecim({ ders, onBaslat, onGeri, srs }) {
             <Text style={{ fontSize: 21, fontFamily: FONT.monoBold, color: '#FFFFFF' }}>Quiz Modu</Text>
             <Text style={{ fontSize: 15, color: '#FFFFFFCC', marginTop: 2, fontFamily: FONT.govde, lineHeight: 20 }}>
               {quizUygun ? 'Dört şıktan doğru olanı seç' : 'Bu seçimde şıklı kart yok'}
-            </Text>
-          </View>
-        </TouchableOpacity>
-
-        <TouchableOpacity onPress={() => { titre.orta(); onBaslat('yaz', secUnite); }} activeOpacity={0.85}
-          disabled={dk.length === 0}
-          style={{
-            backgroundColor: P.yesil, borderRadius: 20,
-            borderBottomWidth: 6, borderBottomColor: P.yesilKoyu,
-            padding: 18, opacity: dk.length ? 1 : 0.4,
-            flexDirection: 'row', alignItems: 'center',
-          }}>
-          <View style={{
-            width: 54, height: 54, borderRadius: 17, backgroundColor: '#FFFFFF33',
-            alignItems: 'center', justifyContent: 'center', marginRight: 15,
-          }}>
-            <PenLine size={28} color="#FFFFFF" strokeWidth={2.6} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 21, fontFamily: FONT.monoBold, color: '#FFFFFF' }}>Yazma Modu</Text>
-            <Text style={{ fontSize: 15, color: '#FFFFFFCC', marginTop: 2, fontFamily: FONT.govde, lineHeight: 20 }}>
-              Cevabı kendin yaz, en zorlayıcı mod
             </Text>
           </View>
         </TouchableOpacity>
@@ -1131,11 +1080,8 @@ function KartModu({ kartlar, mod, onBitti, onUpdate, onGeriAl, srs, sinavMod }) 
   const [gecmis, setGecmis] = useState([]);
   // Bu oturumda geri alınan kartlar: tekrar cevaplansa da ilk sonuç korunur
   const geriAlinan = useRef({});
-  const [yazilan, setYazilan] = useState('');
-  const [yazimSonuc, setYazimSonuc] = useState(null); // 'dogru' | 'yanlis'
   const [dersSayac, setDersSayac] = useState({});     // sınav sonu ders kırılımı
   const isQuiz = mod === 'quiz';
-  const isYaz = mod === 'yaz';
 
   const flip = useRef(new Animated.Value(0)).current;
   const kaydir = useRef(new Animated.ValueXY({ x: 0, y: 0 })).current;
@@ -1166,7 +1112,7 @@ function KartModu({ kartlar, mod, onBitti, onUpdate, onGeriAl, srs, sinavMod }) 
     if (!sinavMod) return;
     const t = setInterval(() => setKalanSaniye(s => {
       if (s === null) return s;
-      if (s <= 1) { clearInterval(t); setGameOver(true); return 0; }
+      if (s <= 1) { clearInterval(t); setErkenBitti(true); return 0; }
       return s - 1;
     }), 1000);
     return () => clearInterval(t);
@@ -1198,7 +1144,7 @@ function KartModu({ kartlar, mod, onBitti, onUpdate, onGeriAl, srs, sinavMod }) 
     if (gercekSonuc) { setDogru(d => d + 1); setXpKazanim(x => x + 10); }
     const bitis = animYon ? animYon * SW * 1.2 : 0;
     Animated.timing(kaydir, { toValue: { x: bitis, y: 0 }, duration: animYon ? 200 : 0, useNativeDriver: true })
-      .start(() => { setAcik(false); setSecilen(null); setYazilan(''); setYazimSonuc(null); sifirlaAnim(); setIdx(i => i + 1); });
+      .start(() => { setAcik(false); setSecilen(null); sifirlaAnim(); setIdx(i => i + 1); });
   };
 
   const geriAl = () => {
@@ -1221,7 +1167,7 @@ function KartModu({ kartlar, mod, onBitti, onUpdate, onGeriAl, srs, sinavMod }) 
         },
       }));
     }
-    setAcik(false); setSecilen(null); setYazilan(''); setYazimSonuc(null); sifirlaAnim();
+    setAcik(false); setSecilen(null); sifirlaAnim();
     setIdx(i => Math.max(0, i - 1));
   };
 
@@ -1341,7 +1287,7 @@ function KartModu({ kartlar, mod, onBitti, onUpdate, onGeriAl, srs, sinavMod }) 
           {sinavMod && dakika !== null ? (
             <Text style={{ fontSize: 21, fontFamily: FONT.monoBold, color: zamanAz ? FOCUS.red : FOCUS.ember }}>{dakika}:{String(saniye).padStart(2, '0')}</Text>
           ) : (
-            <Text style={{ fontSize: 13, color: FOCUS.textSoft, fontFamily: FONT.mono, letterSpacing: 1 }}>{isQuiz ? 'QUIZ' : isYaz ? 'YAZMA' : 'KART'} MODU</Text>
+            <Text style={{ fontSize: 13, color: FOCUS.textSoft, fontFamily: FONT.mono, letterSpacing: 1 }}>{isQuiz ? 'QUIZ' : 'KART'} MODU</Text>
           )}
           <Text style={{ fontFamily: FONT.mono, fontSize: 12, color: FOCUS.textSoft, marginTop: 2 }}>{idx + 1} / {kartlar.length}</Text>
         </View>
@@ -1371,7 +1317,7 @@ function KartModu({ kartlar, mod, onBitti, onUpdate, onGeriAl, srs, sinavMod }) 
       <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', padding: 20 }}
         keyboardShouldPersistTaps="handled">
         <Animated.View
-          {...((!isQuiz && !isYaz) ? pan.panHandlers : {})}
+          {...(!isQuiz ? pan.panHandlers : {})}
           style={{
             opacity: kartOpak,
             transform: [
@@ -1384,7 +1330,7 @@ function KartModu({ kartlar, mod, onBitti, onUpdate, onGeriAl, srs, sinavMod }) 
             backgroundColor: FOCUS.panel, borderRadius: 20, padding: 24,
             borderWidth: 2, borderColor: FOCUS.line,
           }}>
-            {!isQuiz && !isYaz && acik && (
+            {!isQuiz && acik && (
               <React.Fragment>
                 <Animated.View style={{ position: 'absolute', top: 12, right: 12, opacity: evetOpak, borderColor: FOCUS.green, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 12, borderWidth: 2.5 }}>
                   <Text style={{ fontFamily: FONT.monoBold, fontSize: 13, color: FOCUS.green }}>BİLDİM</Text>
@@ -1398,12 +1344,12 @@ function KartModu({ kartlar, mod, onBitti, onUpdate, onGeriAl, srs, sinavMod }) 
             <Text style={{ fontFamily: FONT.mono, fontSize: 12, color: FOCUS.ember, marginBottom: 10, letterSpacing: 1 }}>{kart.unite}</Text>
             <Text style={{ fontSize: 18, fontFamily: FONT.serif, color: FOCUS.text, lineHeight: 26 }}>{kart.soru}</Text>
 
-            {!isQuiz && !isYaz && !acik && (
+            {!isQuiz && !acik && (
               <View style={{ marginTop: 24 }}>
                 <Dugme etiket="CEVABI GÖR" renk={FOCUS.blue} renkKoyu={FOCUS.blueDark} onPress={cevirtme} tam />
               </View>
             )}
-            {!isQuiz && !isYaz && acik && (
+            {!isQuiz && acik && (
               <View style={{ marginTop: 22 }}>
                 <View style={{ backgroundColor: FOCUS.panel2, borderRadius: 8, padding: 14, marginBottom: 14 }}>
                   <Text style={{ fontSize: 16, fontFamily: FONT.mono, color: FOCUS.green }}>{kart.cevap}</Text>
@@ -1421,67 +1367,6 @@ function KartModu({ kartlar, mod, onBitti, onUpdate, onGeriAl, srs, sinavMod }) 
                       onPress={() => cevapla(true, 1)} tam />
                   </View>
                 </View>
-              </View>
-            )}
-
-            {isYaz && (
-              <View style={{ marginTop: 20 }}>
-                {!acik ? (
-                  <React.Fragment>
-                    <TextInput
-                      value={yazilan}
-                      onChangeText={setYazilan}
-                      placeholder="Cevabı buraya yaz"
-                      placeholderTextColor={FOCUS.textSoft}
-                      multiline
-                      style={{
-                        backgroundColor: FOCUS.panel2, borderRadius: 8, padding: 14,
-                        color: FOCUS.text, fontFamily: FONT.mono, fontSize: 17,
-                        minHeight: 56, textAlignVertical: 'top',
-                        borderWidth: 2, borderColor: FOCUS.line,
-                      }}
-                    />
-                    <View style={{ marginTop: 16 }}>
-                      <Dugme etiket="KONTROL ET" renk={FOCUS.blue} renkKoyu={FOCUS.blueDark} tam
-                        pasif={!yazilan.trim()}
-                        onPress={() => {
-                          const dogruMu = cevapEslesiyor(yazilan, kart.cevap);
-                          setYazimSonuc(dogruMu ? 'dogru' : 'yanlis');
-                          setAcik(true);
-                          dogruMu ? titre.dogru() : titre.yanlis();
-                        }} />
-                    </View>
-                  </React.Fragment>
-                ) : (
-                  <React.Fragment>
-                    <View style={{
-                      backgroundColor: FOCUS.panel2, borderRadius: 8, padding: 14, marginBottom: 10,
-                      borderLeftWidth: 3, borderLeftColor: yazimSonuc === 'dogru' ? FOCUS.green : FOCUS.red,
-                    }}>
-                      <Text style={{ fontFamily: FONT.mono, fontSize: 12, color: FOCUS.textSoft, marginBottom: 5 }}>SENİN CEVABIN</Text>
-                      <Text style={{ fontSize: 16, fontFamily: FONT.mono, color: yazimSonuc === 'dogru' ? FOCUS.green : FOCUS.red }}>{yazilan}</Text>
-                    </View>
-                    <View style={{ backgroundColor: FOCUS.panel2, borderRadius: 8, padding: 14, marginBottom: 14, borderLeftWidth: 3, borderLeftColor: FOCUS.green }}>
-                      <Text style={{ fontFamily: FONT.mono, fontSize: 12, color: FOCUS.textSoft, marginBottom: 5 }}>DOĞRU CEVAP</Text>
-                      <Text style={{ fontSize: 16, fontFamily: FONT.mono, color: FOCUS.green }}>{kart.cevap}</Text>
-                    </View>
-
-                    {yazimSonuc === 'yanlis' && (
-                      <TouchableOpacity
-                        style={{ borderWidth: 2, borderColor: FOCUS.line, borderRadius: 14, paddingVertical: 12, alignItems: 'center', marginBottom: 12 }}
-                        onPress={() => cevapla(true, 0)}>
-                        <Text style={{ fontSize: 15, fontFamily: FONT.govdeOrta, color: FOCUS.textSoft }}>Aslında doğruydu, doğru say</Text>
-                      </TouchableOpacity>
-                    )}
-
-                    <Dugme
-                      etiket={yazimSonuc === 'dogru' ? 'DOĞRU · DEVAM' : 'DEVAM ET'}
-                      Ikon={yazimSonuc === 'dogru' ? Check : XIkon}
-                      renk={yazimSonuc === 'dogru' ? FOCUS.green : FOCUS.red}
-                      renkKoyu={yazimSonuc === 'dogru' ? FOCUS.greenDark : FOCUS.redDark}
-                      onPress={() => cevapla(yazimSonuc === 'dogru', 0)} tam />
-                  </React.Fragment>
-                )}
               </View>
             )}
 
@@ -2072,7 +1957,7 @@ function ProfilScreen(props) {
       })}
 
       <View style={{ alignItems: 'center', marginTop: 6 }}>
-        <Text style={{ fontSize: 12, color: P.inkFaint, fontFamily: FONT.mono }}>LGS Cepte · v3.0.0 · {CARDS.length} kart · 6 ders</Text>
+        <Text style={{ fontSize: 12, color: P.inkFaint, fontFamily: FONT.mono }}>LGS Cepte · v3.1.1 · {CARDS.length} kart · 6 ders</Text>
       </View>
     </ScrollView>
   );

@@ -2,7 +2,7 @@
   "expo": {
     "name": "LGS Cepte",
     "slug": "lgs-cards",
-    "version": "3.0.0",
+    "version": "3.1.1",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
@@ -14,7 +14,7 @@
         "backgroundColor": "#10121A"
       },
       "package": "com.enoflixjk.lgscards",
-      "versionCode": 26,
+      "versionCode": 28,
       "permissions": [
         "VIBRATE",
         "RECEIVE_BOOT_COMPLETED",
