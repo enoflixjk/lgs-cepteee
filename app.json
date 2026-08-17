@@ -2,20 +2,24 @@
   "expo": {
     "name": "LGS Cepte",
     "slug": "lgs-cards",
-    "version": "1.8.1",
+    "version": "3.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "userInterfaceStyle": "dark",
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png",
-        "backgroundColor": "#F4EFE1"
+        "backgroundColor": "#10121A"
       },
       "package": "com.enoflixjk.lgscards",
-      "versionCode": 13,
-      "permissions": ["VIBRATE", "RECEIVE_BOOT_COMPLETED", "SCHEDULE_EXACT_ALARM"]
+      "versionCode": 26,
+      "permissions": [
+        "VIBRATE",
+        "RECEIVE_BOOT_COMPLETED",
+        "SCHEDULE_EXACT_ALARM"
+      ]
     },
     "plugins": [
       [
@@ -23,7 +27,7 @@
         {
           "image": "./assets/splash-icon.png",
           "resizeMode": "contain",
-          "backgroundColor": "#F4EFE1"
+          "backgroundColor": "#10121A"
         }
       ],
       [

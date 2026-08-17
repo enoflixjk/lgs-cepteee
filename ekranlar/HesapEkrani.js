@@ -199,9 +199,9 @@ export default function HesapEkrani({ onVeriDegisti, kapiModu, basliksiz, onGec 
       )}
 
       <TouchableOpacity
-        style={[s.dugme, { borderColor: P.red, marginTop: 16 }]}
+        style={[s.dugme, { backgroundColor: P.kirmizi, borderBottomColor: P.kirmiziKoyu, marginTop: 16 }]}
         onPress={() => calistir('Çıkış yapıldı.', cikis_yap)}>
-        <Text style={[s.dugmeYazi, { color: P.red }]}>ÇIKIŞ YAP</Text>
+        <Text style={s.dugmeYazi}>ÇIKIŞ YAP</Text>
       </TouchableOpacity>
 
       <View style={{ height: 1, backgroundColor: P.line, marginTop: 26, marginBottom: 18 }} />
@@ -212,7 +212,7 @@ export default function HesapEkrani({ onVeriDegisti, kapiModu, basliksiz, onGec 
       </Text>
       <TouchableOpacity
         disabled={mesgul}
-        style={[s.dugme, { borderColor: P.red, marginTop: 0 }, mesgul && { opacity: 0.5 }]}
+        style={[s.dugme, { backgroundColor: P.kirmizi, borderBottomColor: P.kirmiziKoyu, marginTop: 0 }, mesgul && { opacity: 0.5 }]}
         onPress={() => Alert.alert(
           'Hesabını sil',
           'Hesabın ve buluttaki tüm ilerlemen kalıcı olarak silinecek. Bu işlem geri alınamaz. Devam edilsin mi?',
@@ -225,7 +225,7 @@ export default function HesapEkrani({ onVeriDegisti, kapiModu, basliksiz, onGec 
             },
           ]
         )}>
-        <Text style={[s.dugmeYazi, { color: P.red }]}>HESABIMI KALICI OLARAK SİL</Text>
+        <Text style={s.dugmeYazi}>HESABIMI KALICI OLARAK SİL</Text>
       </TouchableOpacity>
 
       <Text style={s.dipnot}>
@@ -240,7 +240,7 @@ function yapStil(P) {
     ustEtiket: { fontFamily: FONT.mono, fontSize: 13, color: P.red, letterSpacing: 2, marginTop: 8 },
     baslik: { fontFamily: FONT.serif, fontSize: 31, color: P.ink, marginBottom: 10, marginTop: 6 },
     aciklama: { fontFamily: FONT.govde, fontSize: 18, color: P.inkSoft, lineHeight: 24, marginBottom: 18 },
-    kart: { backgroundColor: P.yuzey, borderWidth: 1, borderColor: P.line, padding: 16, marginBottom: 14 },
+    kart: { backgroundColor: P.yuzey, borderWidth: 2, borderColor: P.line, borderRadius: 16, padding: 18, marginBottom: 14 },
     etiket: { fontFamily: FONT.mono, fontSize: 12, color: P.red, letterSpacing: 1 },
     alanEtiket: { fontFamily: FONT.mono, fontSize: 12, color: P.inkSoft, letterSpacing: 1, marginTop: 14 },
     girdi: {
