@@ -16,6 +16,7 @@
     "expo-haptics": "~15.0.8",
     "expo-linear-gradient": "~15.0.8",
     "expo-notifications": "~0.32.17",
+    "expo-sensors": "~15.0.8",
     "expo-splash-screen": "~31.0.13",
     "expo-status-bar": "~3.0.9",
     "lucide-react-native": "^1.31.0",
