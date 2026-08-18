@@ -2,7 +2,7 @@
   "expo": {
     "name": "Ligo LGS Cepte",
     "slug": "lgs-cards",
-    "version": "4.5.1",
+    "version": "4.7.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
@@ -14,7 +14,7 @@
         "backgroundColor": "#10121A"
       },
       "package": "com.enoflixjk.lgscards",
-      "versionCode": 45,
+      "versionCode": 47,
       "permissions": [
         "VIBRATE",
         "RECEIVE_BOOT_COMPLETED",

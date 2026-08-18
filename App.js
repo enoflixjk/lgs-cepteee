@@ -27,6 +27,7 @@ import { supabase } from './lib/supabase';
 import { dersGorseli } from './lib/gorseller';
 import { ligoMesaji, bildirimleriPlanla } from './lib/ligo';
 import { ligoGorsel, ligoIfadesi } from './lib/ligoGorsel';
+import { disSoruEkle, odakOturumuKaydet, haftalikOdakDakika, rumuzAyarla, liderlikSoru, liderlikOdak } from './lib/bulut';
 import { useIvmeTakip } from './lib/sallama';
 
 const { width: SW } = Dimensions.get('window');
@@ -981,6 +982,558 @@ function st_etiket(P) {
 }
 
 // ============================================================
+// ODAK MODU — kronometre + kaçma tespiti
+//
+// Uygulama gerçekten başka uygulamaları engelleyemez (iOS/Android
+// izin vermez). Bunun yerine dürüst bir alternatif sunar: süreyi
+// tutar, ana ekrana çıkıp çıkmadığını sayar, oturum sonunda ikisini
+// de kaydeder. Zorlama değil, farkındalık.
+// ============================================================
+// ============================================================
+// ODAK MODU — Bedtime tarzı dairesel kadran + tam ekran sayaç
+//
+// Üç ekran: 'ayar' (süreyi kadrandan sürükleyerek seç) ->
+// 'aktif' (tam ekran, yalnızca sayaç ve küçük bir çıkış düğmesi) ->
+// 'ozet' (bitiş kartı).
+//
+// Uygulama gerçekten başka uygulamaları engelleyemez (iOS/Android
+// izin vermez). Bunun yerine dürüst bir alternatif sunar: süreyi
+// tutar, ana ekrana çıkıp çıkmadığını sayar, oturum sonunda kaydeder.
+// ============================================================
+const ODAK_MIN_DK = 5;
+const ODAK_MAX_DK = 120;
+const ODAK_VARSAYILAN_DK = 25;
+const KADRAN_BOYUT = 260;
+
+function dakikadanAci(dk) {
+  const oran = (dk - ODAK_MIN_DK) / (ODAK_MAX_DK - ODAK_MIN_DK);
+  return Math.max(0, Math.min(1, oran)) * 360;
+}
+function aciDanDakika(aciDeg) {
+  const oran = aciDeg / 360;
+  const ham = ODAK_MIN_DK + oran * (ODAK_MAX_DK - ODAK_MIN_DK);
+  return Math.round(ham / 5) * 5; // 5 dakikaya yuvarla — kadran "snap" hissi versin
+}
+
+// Dairesel süre kadranı: Bedtime saatindeki gibi sürükleyerek ayarlanır
+function OdakKadrani({ dakika, onDegis, renk, renkKoyu }) {
+  const { P } = useTema();
+  const boyut = KADRAN_BOYUT;
+  const r = boyut / 2 - 22;
+  const merkez = boyut / 2;
+  const cevre = 2 * Math.PI * r;
+  const aciDeg = dakikadanAci(dakika);
+  const dolu = cevre * (aciDeg / 360);
+
+  const konumRef = useRef(null);
+
+  const dokunuslaGuncelle = (px, py) => {
+    const dx = px - merkez, dy = py - merkez;
+    let aci = (Math.atan2(dx, -dy) * 180) / Math.PI;
+    if (aci < 0) aci += 360;
+    onDegis(aciDanDakika(aci));
+  };
+
+  const pan = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderGrant: (e) => dokunuslaGuncelle(e.nativeEvent.locationX, e.nativeEvent.locationY),
+      onPanResponderMove: (e) => dokunuslaGuncelle(e.nativeEvent.locationX, e.nativeEvent.locationY),
+    })
+  ).current;
+
+  // Sürükleme tutamacının konumu (açının ucunda)
+  const aciRad = ((aciDeg - 90) * Math.PI) / 180;
+  const tutX = merkez + r * Math.cos(aciRad);
+  const tutY = merkez + r * Math.sin(aciRad);
+
+  return (
+    <View
+      ref={konumRef}
+      {...pan.panHandlers}
+      style={{ width: boyut, height: boyut, alignItems: 'center', justifyContent: 'center' }}>
+      <Svg width={boyut} height={boyut} style={{ position: 'absolute' }}>
+        <Circle cx={merkez} cy={merkez} r={r} stroke={P.koyu ? 'rgba(255,255,255,0.09)' : 'rgba(16,18,26,0.08)'} strokeWidth={16} fill="none" />
+        <Circle
+          cx={merkez} cy={merkez} r={r}
+          stroke={renk} strokeWidth={16} fill="none"
+          strokeDasharray={dolu + ' ' + (cevre - dolu)}
+          strokeLinecap="round"
+          transform={'rotate(-90 ' + merkez + ' ' + merkez + ')'}
+        />
+      </Svg>
+
+      {/* Sürükleme tutamacı */}
+      <View
+        pointerEvents="none"
+        style={{
+          position: 'absolute', left: tutX - 14, top: tutY - 14,
+          width: 28, height: 28, borderRadius: 14,
+          backgroundColor: renk, borderWidth: 3, borderColor: '#FFFFFF',
+          shadowColor: renk, shadowOpacity: 0.7, shadowRadius: 8, elevation: 6,
+        }}
+      />
+
+      <View style={{ alignItems: 'center' }} pointerEvents="none">
+        <Text style={{ fontFamily: FONT.baslik, fontSize: 52, color: P.ink, lineHeight: 58 }}>{dakika}</Text>
+        <Text style={{ fontFamily: FONT.monoBold, fontSize: 13, color: P.inkSoft, letterSpacing: 1.5, marginTop: -4 }}>DAKİKA</Text>
+      </View>
+    </View>
+  );
+}
+
+function OdakModu({ onKapat }) {
+  const { P, s: st } = useTema();
+  const kenar = useSafeAreaInsets();
+
+  const [ekran, setEkran] = useState('ayar'); // 'ayar' | 'aktif' | 'ozet'
+  const [dakika, setDakika] = useState(ODAK_VARSAYILAN_DK);
+  const [kalanSaniye, setKalanSaniye] = useState(0);
+  const [gecenSaniye, setGecenSaniye] = useState(0);
+  const [kacma, setKacma] = useState(0);
+  const [izinliListe, setIzinliListe] = useState([]);
+  const [izinliGirdi, setIzinliGirdi] = useState('');
+  const [tamamlandi, setTamamlandi] = useState(false);
+
+  const zamanRef = useRef(null);
+  const arkaPlandaMi = useRef(false);
+
+  useEffect(() => {
+    AsyncStorage.getItem('lgs_izinli_uygulamalar').then(v => {
+      if (v) { try { setIzinliListe(JSON.parse(v)); } catch (e) {} }
+    });
+  }, []);
+
+  // Aktif ekranda geri sayım
+  useEffect(() => {
+    if (ekran !== 'aktif') return;
+    zamanRef.current = setInterval(() => {
+      setKalanSaniye(s => {
+        if (s <= 1) {
+          clearInterval(zamanRef.current);
+          setTamamlandi(true);
+          setEkran('ozet');
+          titre.dogru();
+          return 0;
+        }
+        return s - 1;
+      });
+      setGecenSaniye(s => s + 1);
+    }, 1000);
+    return () => clearInterval(zamanRef.current);
+  }, [ekran]);
+
+  // Uygulamadan ayrılma tespiti — sayaç durmaz, sadece kaçma sayılır
+  // ve geri dönünce otomatik devam eder (akışı bozmasın diye).
+  useEffect(() => {
+    if (ekran !== 'aktif') return;
+    const dinleyici = AppState.addEventListener('change', (durum) => {
+      if (durum !== 'active' && !arkaPlandaMi.current) {
+        arkaPlandaMi.current = true;
+        setKacma(k => k + 1);
+      } else if (durum === 'active') {
+        arkaPlandaMi.current = false;
+      }
+    });
+    return () => dinleyici.remove();
+  }, [ekran]);
+
+  const izinliEkle = () => {
+    const t = izinliGirdi.trim();
+    if (!t || izinliListe.includes(t)) return;
+    const yeni = [...izinliListe, t].slice(0, 6);
+    setIzinliListe(yeni);
+    setIzinliGirdi('');
+    AsyncStorage.setItem('lgs_izinli_uygulamalar', JSON.stringify(yeni)).catch(() => {});
+  };
+  const izinliSil = (t) => {
+    const yeni = izinliListe.filter(x => x !== t);
+    setIzinliListe(yeni);
+    AsyncStorage.setItem('lgs_izinli_uygulamalar', JSON.stringify(yeni)).catch(() => {});
+  };
+
+  const baslat = () => {
+    titre.orta();
+    setKalanSaniye(dakika * 60);
+    setGecenSaniye(0);
+    setKacma(0);
+    setTamamlandi(false);
+    setEkran('aktif');
+  };
+
+  const erkenBitir = () => {
+    Alert.alert('Odağı bitir', 'Oturumu şimdi sonlandırmak istiyor musun?', [
+      { text: 'Devam et' },
+      {
+        text: 'Bitir', style: 'destructive',
+        onPress: () => {
+          clearInterval(zamanRef.current);
+          setTamamlandi(false);
+          setEkran('ozet');
+        },
+      },
+    ]);
+  };
+
+  useEffect(() => {
+    if (ekran !== 'ozet') return;
+    if (gecenSaniye >= 30) {
+      odakOturumuKaydet(gecenSaniye, kacma).catch(() => {});
+    }
+  }, [ekran]);
+
+  // ---------- EKRAN: AKTİF — yalnızca sayaç ve küçük çıkış düğmesi ----------
+  if (ekran === 'aktif') {
+    const toplamSaniye = dakika * 60;
+    const r = 150;
+    const cevre = 2 * Math.PI * r;
+    const ilerlemeOran = 1 - kalanSaniye / toplamSaniye;
+    const dolu = cevre * ilerlemeOran;
+    const dk = Math.floor(kalanSaniye / 60);
+    const sn = kalanSaniye % 60;
+
+    return (
+      <View style={{ flex: 1, backgroundColor: FOCUS.bg, alignItems: 'center', justifyContent: 'center' }}>
+        <TouchableOpacity
+          onPress={erkenBitir}
+          hitSlop={{ top: 14, bottom: 14, left: 14, right: 14 }}
+          style={{
+            position: 'absolute', top: kenar.top + 16, right: 22, zIndex: 10,
+            width: 40, height: 40, borderRadius: 20,
+            backgroundColor: 'rgba(255,255,255,0.06)',
+            alignItems: 'center', justifyContent: 'center',
+          }}>
+          <XIkon size={18} color={FOCUS.textSoft} strokeWidth={2.2} />
+        </TouchableOpacity>
+
+        <View style={{ width: r * 2 + 32, height: r * 2 + 32, alignItems: 'center', justifyContent: 'center' }}>
+          <Svg width={r * 2 + 32} height={r * 2 + 32} style={{ position: 'absolute' }}>
+            <Circle cx={r + 16} cy={r + 16} r={r} stroke={FOCUS.line} strokeWidth={10} fill="none" />
+            <Circle
+              cx={r + 16} cy={r + 16} r={r}
+              stroke={FOCUS.blue} strokeWidth={10} fill="none"
+              strokeDasharray={dolu + ' ' + (cevre - dolu)}
+              strokeLinecap="round"
+              transform={'rotate(-90 ' + (r + 16) + ' ' + (r + 16) + ')'}
+            />
+          </Svg>
+          <Text style={{ fontFamily: FONT.baslik, fontSize: 64, color: FOCUS.text, letterSpacing: 1 }}>
+            {String(dk).padStart(2, '0')}:{String(sn).padStart(2, '0')}
+          </Text>
+        </View>
+      </View>
+    );
+  }
+
+  // ---------- EKRAN: ÖZET ----------
+  if (ekran === 'ozet') {
+    const dk = Math.floor(gecenSaniye / 60);
+    return (
+      <View style={{ flex: 1, backgroundColor: FOCUS.bg, paddingTop: kenar.top, paddingBottom: kenar.bottom }}>
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 30 }}>
+          {ligoGorsel(tamamlandi ? 'kutlama' : 'mutlu') && (
+            <Image source={ligoGorsel(tamamlandi ? 'kutlama' : 'mutlu')} style={{ width: 120, height: 120, resizeMode: 'contain', marginBottom: 20 }} />
+          )}
+          <Text style={{ fontFamily: FONT.baslik, fontSize: 28, color: FOCUS.text, textAlign: 'center' }}>
+            {dk} dakika odaklandın
+          </Text>
+          <Text style={{ fontFamily: FONT.govde, fontSize: 16, color: FOCUS.textSoft, textAlign: 'center', marginTop: 10 }}>
+            {kacma === 0 ? 'Hiç dikkatin dağılmadı, çok iyi.' : kacma + ' kere uygulamadan çıktın.'}
+          </Text>
+          <View style={{ width: '100%', marginTop: 30 }}>
+            <Dugme etiket="TEKRAR ODAKLAN" renk={FOCUS.blue} renkKoyu={FOCUS.blueDark} tam
+              onPress={() => setEkran('ayar')} />
+            <View style={{ height: 12 }} />
+            <TouchableOpacity onPress={onKapat} style={{ alignItems: 'center', paddingVertical: 12 }}>
+              <Text style={{ fontFamily: FONT.govdeKalin, fontSize: 15, color: FOCUS.textSoft }}>Profile dön</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    );
+  }
+
+  // ---------- EKRAN: AYAR — kadran + hazır süreler + izinli liste ----------
+  return (
+    <View style={{ flex: 1, backgroundColor: FOCUS.bg, paddingTop: kenar.top, paddingBottom: kenar.bottom }}>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 12 }}>
+        <IkonDugme Ikon={XIkon} dolu renk={FOCUS.panel2} renkKoyu={FOCUS.line}
+          ikonRenk={FOCUS.textSoft} onPress={onKapat} boyut={44} ikonBoyut={20} />
+        <Text style={{ fontFamily: FONT.monoBold, fontSize: 14, color: FOCUS.text, letterSpacing: 1 }}>ODAK MODU</Text>
+        <View style={{ width: 44 }} />
+      </View>
+
+      <ScrollView contentContainerStyle={{ padding: 24, alignItems: 'center', flexGrow: 1 }}>
+
+        <Text style={{ fontFamily: FONT.govde, fontSize: 14, color: FOCUS.textSoft, textAlign: 'center', marginBottom: 22, marginTop: 4 }}>
+          Kadranı çevirerek süreni ayarla
+        </Text>
+
+        <OdakKadrani dakika={dakika} onDegis={setDakika} renk={FOCUS.blue} renkKoyu={FOCUS.blueDark} />
+
+        {/* Hazır süreler — kadranla uğraşmak istemeyenler için */}
+        <View style={{ flexDirection: 'row', marginTop: 26, marginBottom: 8 }}>
+          {[15, 25, 45, 60].map(n => (
+            <TouchableOpacity key={n} onPress={() => { titre.hafif(); setDakika(n); }}
+              style={{
+                paddingHorizontal: 16, paddingVertical: 9, borderRadius: 999, marginRight: 9,
+                backgroundColor: dakika === n ? FOCUS.blue : FOCUS.panel2,
+                borderWidth: 1, borderColor: dakika === n ? FOCUS.blue : FOCUS.line,
+              }}>
+              <Text style={{
+                fontFamily: FONT.govdeKalin, fontSize: 13,
+                color: dakika === n ? '#FFFFFF' : FOCUS.textSoft,
+              }}>{n} dk</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        <View style={{ width: '100%', marginTop: 22 }}>
+          <Dugme etiket="ODAĞA BAŞLA" renk={FOCUS.blue} renkKoyu={FOCUS.blueDark} tam onPress={baslat} />
+        </View>
+
+        {/* İzinli uygulamalar — kendi kendine verdiğin söz, teknik olarak zorlanmaz */}
+        <View style={{ width: '100%', backgroundColor: FOCUS.panel, borderRadius: 18, padding: 18, borderWidth: 1, borderColor: FOCUS.line, marginTop: 22 }}>
+          <Text style={{ fontFamily: FONT.monoBold, fontSize: 12, color: FOCUS.textSoft, letterSpacing: 1, marginBottom: 4 }}>
+            BU OTURUMDA YALNIZCA
+          </Text>
+          <Text style={{ fontFamily: FONT.govde, fontSize: 13, color: FOCUS.textSoft, marginBottom: 14, lineHeight: 19 }}>
+            Bunları uygulama açıp kilitleyemeyiz, sana bir hatırlatma bırakıyoruz.
+          </Text>
+
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: izinliListe.length ? 14 : 0 }}>
+            {izinliListe.map(t => (
+              <TouchableOpacity key={t} onPress={() => izinliSil(t)}
+                style={{
+                  flexDirection: 'row', alignItems: 'center',
+                  backgroundColor: FOCUS.emberSoft, borderRadius: 999,
+                  paddingHorizontal: 12, paddingVertical: 7, marginRight: 8, marginBottom: 8,
+                }}>
+                <Text style={{ fontFamily: FONT.govdeKalin, fontSize: 13, color: FOCUS.ember }}>{t}</Text>
+                <XIkon size={13} color={FOCUS.ember} strokeWidth={2.6} style={{ marginLeft: 6 }} />
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          {izinliListe.length < 6 && (
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <TextInput
+                value={izinliGirdi}
+                onChangeText={setIzinliGirdi}
+                onSubmitEditing={izinliEkle}
+                placeholder="Örn. Quizlet"
+                placeholderTextColor={FOCUS.textSoft}
+                style={{
+                  flex: 1, backgroundColor: FOCUS.panel2, borderRadius: 12,
+                  paddingHorizontal: 14, paddingVertical: 10, color: FOCUS.text,
+                  fontFamily: FONT.govde, fontSize: 14, marginRight: 8,
+                }}
+              />
+              <TouchableOpacity onPress={izinliEkle}
+                style={{ backgroundColor: FOCUS.panel2, borderRadius: 12, padding: 10 }}>
+                <Plus size={18} color={FOCUS.text} strokeWidth={2.4} />
+              </TouchableOpacity>
+            </View>
+          )}
+        </View>
+      </ScrollView>
+    </View>
+  );
+}
+
+// ============================================================
+// LİDERLİK TABLOSU — haftalık, yalnızca rumuz görünür
+// ============================================================
+function LiderlikEkrani({ profil, setProfil, hesapVarMi }) {
+  const { P, s: st } = useTema();
+  const [sekme, setSekme] = useState('soru'); // 'soru' | 'odak'
+  const [soruListe, setSoruListe] = useState(null);
+  const [odakListe, setOdakListe] = useState(null);
+  const [rumuzGirdi, setRumuzGirdi] = useState(profil?.rumuz || '');
+  const [kayitEdiliyor, setKayitEdiliyor] = useState(false);
+  const [hata, setHata] = useState('');
+
+  const yukle = React.useCallback(async () => {
+    const [s, o] = await Promise.all([liderlikSoru(), liderlikOdak()]);
+    setSoruListe(s); setOdakListe(o);
+  }, []);
+
+  useEffect(() => { if (hesapVarMi && profil?.rumuz) yukle(); }, [hesapVarMi, profil?.rumuz, yukle]);
+
+  const rumuzKaydet = async () => {
+    setHata(''); setKayitEdiliyor(true);
+    try {
+      const t = await rumuzAyarla(rumuzGirdi);
+      setProfil(p => ({ ...p, rumuz: t }));
+      titre.dogru();
+      yukle();
+    } catch (e) {
+      setHata(e.message || 'Bir sorun oldu.');
+    } finally {
+      setKayitEdiliyor(false);
+    }
+  };
+
+  if (!hesapVarMi) {
+    return (
+      <View style={{ alignItems: 'center', paddingVertical: 30 }}>
+        {ligoGorsel('normal') && (
+          <Image source={ligoGorsel('normal')} style={{ width: 96, height: 96, resizeMode: 'contain', marginBottom: 16 }} />
+        )}
+        <Text style={{ fontFamily: FONT.govde, fontSize: 16, color: P.inkSoft, textAlign: 'center', lineHeight: 23 }}>
+          Liderlik tablosuna girmek için{'\n'}hesap açman gerekiyor.
+        </Text>
+      </View>
+    );
+  }
+
+  if (!profil?.rumuz) {
+    return (
+      <View style={st.kart}>
+        <Text style={st.etiket}>RUMUZUNU SEÇ</Text>
+        <Text style={{ fontFamily: FONT.govde, fontSize: 14, color: P.inkSoft, marginBottom: 14, lineHeight: 20 }}>
+          Liderlik tablosunda gerçek adın değil, seçtiğin rumuz görünür.
+        </Text>
+        <TextInput
+          style={st.girdi}
+          value={rumuzGirdi}
+          onChangeText={setRumuzGirdi}
+          placeholder="Örn. GeceKartali"
+          placeholderTextColor={P.inkFaint}
+          maxLength={20}
+          autoCapitalize="none"
+        />
+        {hata ? <Text style={{ color: P.kirmizi, fontFamily: FONT.govde, fontSize: 13, marginBottom: 10 }}>{hata}</Text> : null}
+        <Dugme etiket={kayitEdiliyor ? 'KAYDEDİLİYOR...' : 'RUMUZU KAYDET'}
+          renk={P.altin} renkKoyu={P.altinKoyu} tam
+          onPress={kayitEdiliyor ? undefined : rumuzKaydet} />
+      </View>
+    );
+  }
+
+  const liste = sekme === 'soru' ? soruListe : odakListe;
+
+  return (
+    <View>
+      <View style={{ flexDirection: 'row', marginBottom: 16 }}>
+        {[{ id: 'soru', ad: 'Soru Sayısı' }, { id: 'odak', ad: 'Odak Süresi' }].map(t => (
+          <TouchableOpacity key={t.id} onPress={() => { titre.hafif(); setSekme(t.id); }}
+            style={[st.hap, { flex: 1, marginRight: t.id === 'soru' ? 8 : 0, alignItems: 'center' },
+              sekme === t.id && st.hapAktif]}>
+            <Text style={[st.hapYazi, sekme === t.id && { color: P.mavi, fontFamily: FONT.monoBold }]}>{t.ad}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      <Text style={{ fontFamily: FONT.govde, fontSize: 13, color: P.inkFaint, marginBottom: 14, textAlign: 'center' }}>
+        Bu hafta · Pazartesi sıfırlanır
+      </Text>
+
+      {liste === null ? (
+        <Text style={{ textAlign: 'center', color: P.inkFaint, fontFamily: FONT.govde }}>Yükleniyor...</Text>
+      ) : liste.length === 0 ? (
+        <View style={{ alignItems: 'center', paddingVertical: 20 }}>
+          <Text style={{ fontFamily: FONT.govde, fontSize: 15, color: P.inkSoft, textAlign: 'center' }}>
+            Bu hafta henüz kimse veri girmemiş.{'\n'}İlk sen ol.
+          </Text>
+        </View>
+      ) : (
+        liste.map((k, i) => (
+          <View key={k.rumuz} style={[st.dersSatir, {
+            paddingVertical: 13,
+            borderColor: k.rumuz === profil.rumuz ? P.altin : P.line,
+          }]}>
+            <View style={{
+              width: 30, height: 30, borderRadius: 15, marginRight: 12,
+              alignItems: 'center', justifyContent: 'center',
+              backgroundColor: i < 3 ? P.altinZemin : P.bgAlt,
+            }}>
+              <Text style={{ fontFamily: FONT.baslik, fontSize: 13, color: i < 3 ? P.altin : P.inkFaint }}>{i + 1}</Text>
+            </View>
+            <Text style={{ flex: 1, fontFamily: FONT.govdeKalin, fontSize: 15, color: P.ink }} numberOfLines={1}>
+              {k.rumuz}{k.rumuz === profil.rumuz ? ' (sen)' : ''}
+            </Text>
+            <Text style={{ fontFamily: FONT.baslik, fontSize: 17, color: P.mavi }}>
+              {sekme === 'soru' ? k.toplam : k.toplam_dakika + ' dk'}
+            </Text>
+          </View>
+        ))
+      )}
+    </View>
+  );
+}
+
+// ============================================================
+// DIŞ KAYNAK GİRİŞİ — kitap/dershane sorularını sayan mini widget
+// ============================================================
+function DisKaynakGiris() {
+  const { P } = useTema();
+  const [deger, setDeger] = useState('');
+  const [gonderiliyor, setGonderiliyor] = useState(false);
+  const [basari, setBasari] = useState(false);
+
+  const gonder = async () => {
+    const n = parseInt(deger, 10);
+    if (!n || n <= 0) return;
+    setGonderiliyor(true);
+    const ok = await disSoruEkle(n);
+    setGonderiliyor(false);
+    if (ok) {
+      setDeger('');
+      setBasari(true);
+      titre.dogru();
+      setTimeout(() => setBasari(false), 1800);
+    }
+  };
+
+  return (
+    <View style={{
+      flexDirection: 'row', alignItems: 'center',
+      backgroundColor: P.yuzey, borderWidth: 1, borderColor: P.line,
+      borderRadius: 18, padding: 14, marginBottom: 14,
+    }}>
+      <View style={{
+        width: 40, height: 40, borderRadius: 13, backgroundColor: P.altinZemin,
+        alignItems: 'center', justifyContent: 'center', marginRight: 12,
+      }}>
+        <BookOpenCheck size={20} color={P.altin} strokeWidth={2.4} />
+      </View>
+      <View style={{ flex: 1 }}>
+        <Text style={{ fontFamily: FONT.govdeKalin, fontSize: 13, color: P.ink }}>
+          {basari ? 'Eklendi, liderlik güncellendi' : 'Dışarıda kaç soru çözdün?'}
+        </Text>
+        {!basari && (
+          <Text style={{ fontFamily: FONT.govde, fontSize: 12, color: P.inkFaint, marginTop: 1 }}>
+            Kitap, dershane, defter — hepsi sayılır
+          </Text>
+        )}
+      </View>
+      {!basari && (
+        <>
+          <TextInput
+            value={deger}
+            onChangeText={setDeger}
+            placeholder="0"
+            placeholderTextColor={P.inkFaint}
+            keyboardType="number-pad"
+            style={{
+              width: 56, backgroundColor: P.bgAlt, borderWidth: 1.5, borderColor: P.line,
+              borderRadius: 10, paddingVertical: 8, textAlign: 'center',
+              fontFamily: FONT.monoBold, fontSize: 15, color: P.ink, marginRight: 8,
+            }}
+          />
+          <TouchableOpacity onPress={gonder} disabled={gonderiliyor}
+            style={{ backgroundColor: P.altin, borderRadius: 10, padding: 9, opacity: gonderiliyor ? 0.5 : 1 }}>
+            <Plus size={18} color="#FFFFFF" strokeWidth={2.6} />
+          </TouchableOpacity>
+        </>
+      )}
+    </View>
+  );
+}
+
+// ============================================================
 // 3B BUTON — basılabilir görünen, basınca çöken tuş
 // Alt kenardaki kalınlık fiziksel derinlik hissi verir.
 // ============================================================
@@ -1416,7 +1969,7 @@ function TabBar({ tab, setTab }) {
 // ============ ANA SAYFA ============
 function HomeScreen({
   srs, xp, seri, bugun, hedefKart, onDersBaslat, sinavTarihi, profil,
-  onSinavBaslat, onProfil, denemeGecmisi, gunluk, gunlukDers,
+  onSinavBaslat, onProfil, denemeGecmisi, gunluk, gunlukDers, hesapVarMi,
 }) {
   const { P, s: st, DERSLER, seviyeHesapla, koyu } = useTema();
   const kenar = useSafeAreaInsets();
@@ -1696,6 +2249,8 @@ function HomeScreen({
           }}>{ligoSozu}</Text>
         </View>
       </View>
+
+      {hesapVarMi && <DisKaynakGiris />}
 
       {/* ================= İSTATİSTİK ================= */}
       <TouchableOpacity activeOpacity={0.9} onPress={() => { titre.orta(); onProfil && onProfil(); }}
@@ -2952,7 +3507,7 @@ function ProfilScreen(props) {
     srs, xp, seri, profil, setProfil, sinavSayisi, enIyiSinavPct,
     hedefKart, setHedefKart, sinavTarihi, setSinavTarihi,
     bildirimAcik, setBildirimAcik, bildirimSaat, setBildirimSaat,
-    gunluk, denemeGecmisi, onVeriDegisti,
+    gunluk, denemeGecmisi, onVeriDegisti, hesapVarMi,
   } = props;
   const { P, s: st, DERSLER, seviyeHesapla } = useTema();
   const kenar = useSafeAreaInsets();
@@ -2973,7 +3528,11 @@ function ProfilScreen(props) {
             </View>
           </TouchableOpacity>
           <Text style={{ flex: 1, textAlign: 'center', fontFamily: FONT.serif, fontSize: 20, color: P.ink, marginRight: 60 }}>
-            {altSayfa === 'ayarlar' ? 'Ayarlar' : altSayfa === 'notlar' ? 'Sınav Notlarım' : 'Hesap'}
+            {altSayfa === 'ayarlar' ? 'Ayarlar'
+              : altSayfa === 'notlar' ? 'Sınav Notlarım'
+              : altSayfa === 'liderlik' ? 'Liderlik'
+              : altSayfa === 'odak' ? 'Odak Modu'
+              : 'Hesap'}
           </Text>
         </View>
         {altSayfa === 'ayarlar' ? (
@@ -2987,6 +3546,10 @@ function ProfilScreen(props) {
           />
         ) : altSayfa === 'notlar' ? (
           <SinavNotlariEkrani />
+        ) : altSayfa === 'liderlik' ? (
+          <LiderlikEkrani profil={profil} setProfil={setProfil} hesapVarMi={hesapVarMi} />
+        ) : altSayfa === 'odak' ? (
+          <OdakModu onKapat={() => setAltSayfa(null)} />
         ) : (
           <HesapEkrani onVeriDegisti={onVeriDegisti} basliksiz />
         )}
@@ -3126,6 +3689,10 @@ function ProfilScreen(props) {
           Ikon: Settings, gradyan: ['#4776E6', '#8E54E9'] },
         { id: 'notlar', ad: 'Sınav Notlarım', alt: 'Okul ve dershane sınavlarını kaydet',
           Ikon: NotebookPen, gradyan: ['#F7971E', '#FFD200'] },
+        { id: 'odak', ad: 'Odak Modu', alt: 'Kronometre ile odaklan',
+          Ikon: Timer, gradyan: ['#11998E', '#38EF7D'] },
+        { id: 'liderlik', ad: 'Liderlik', alt: 'Rumuzunla haftalık yarış',
+          Ikon: Trophy, gradyan: ['#E52D27', '#F7971E'] },
         { id: 'hesap', ad: 'Hesap', alt: 'Yedekleme, çıkış, hesabı silme',
           Ikon: Cloud, gradyan: ['#00B4DB', '#0083B0'] },
       ].map(b => {
@@ -3154,7 +3721,7 @@ function ProfilScreen(props) {
       })}
 
       <View style={{ alignItems: 'center', marginTop: 6 }}>
-        <Text style={{ fontSize: 12, color: P.inkFaint, fontFamily: FONT.mono }}>Ligo LGS Cepte · v4.5.1 · 6 ders</Text>
+        <Text style={{ fontSize: 12, color: P.inkFaint, fontFamily: FONT.mono }}>Ligo LGS Cepte · v4.7.0 · 6 ders</Text>
       </View>
     </ScrollView>
   );
@@ -3559,7 +4126,7 @@ function Icerik() {
   return (
     <Sayfa>
       <View style={{ flex: 1 }}>
-        {tab === 'home' && <HomeScreen srs={srs} xp={xp} seri={seri} bugun={bugun} hedefKart={hedefKart} onDersBaslat={setAktifDers} sinavTarihi={sinavTarihi} profil={profil} onSinavBaslat={sinavBaslat} onProfil={() => setTab('profil')} denemeGecmisi={denemeGecmisi} gunluk={gunluk} gunlukDers={gunlukDers} />}
+        {tab === 'home' && <HomeScreen srs={srs} xp={xp} seri={seri} bugun={bugun} hedefKart={hedefKart} onDersBaslat={setAktifDers} sinavTarihi={sinavTarihi} profil={profil} onSinavBaslat={sinavBaslat} onProfil={() => setTab('profil')} denemeGecmisi={denemeGecmisi} gunluk={gunluk} gunlukDers={gunlukDers} hesapVarMi={!!oturum} />}
         {tab === 'dersler' && <DerslerScreen srs={srs} onDersBaslat={setAktifDers} />}
         {tab === 'profil' && (
           <ProfilScreen
@@ -3571,6 +4138,7 @@ function Icerik() {
             bildirimSaat={bildirimSaat} setBildirimSaat={setBildirimSaat}
             gunluk={gunluk} denemeGecmisi={denemeGecmisi}
             onVeriDegisti={yereldenTazele}
+            hesapVarMi={!!oturum}
           />
         )}
       </View>
