@@ -999,7 +999,7 @@ export const CARDS = [
   { id: "leng-0147", ders: "ingilizce", unite: "Dil Bilgisi", lgsKapsam: false, soru: "'Recovery' kelimesinin anlamı nedir?", cevap: "İyileşme, toparlanma", secenekler: ["İyileşme, toparlanma", "Ameliyat", "Hastalık", "Tedavi"], zorluk: 2 },
   { id: "leng-0148", ders: "ingilizce", unite: "Dil Bilgisi", lgsKapsam: false, soru: "Apostrophe (') ne zaman kullanılır?", cevap: "Kısaltmalarda (don't, I'm) ve sahiplik belirtmede (John's)", secenekler: ["Kısaltmalarda (don't, I'm) ve sahiplik belirtmede (John's)", "Cümle sonunda", "Soru cümlelerinde", "Sadece çoğul yapılarda"], zorluk: 2 },
   { id: "leng-0149", ders: "ingilizce", unite: "Dil Bilgisi", lgsKapsam: false, soru: "'Discount' kelimesinin anlamı nedir?", cevap: "İndirim", secenekler: ["İndirim", "Fiyat", "Ürün", "Kasa"], zorluk: 1 },
-  { id: "leng-0150", ders: "ingilizce", unite: "Dil Bilgisi", lgsKapsam: false, soru: "'Receipt' kelimesinin anlamı nedir?", cevap: "Fiş, makbuz", secenekler: ["Fiş, makbuz", "İndirim", "Ürün", "Kasa"], zorluk: 2 },
+  { id: "leng-0150", ders: "ingilizce", unite: "Dil Bilgisi", lgsKapsam: false, soru: "'Receipt' kelimesinin anlamı nedir?", cevap: "Fiş, makbuz", secenekler: ["Fiş, makbuz", "İndirim", "Ürün", "Kasa"], zorluk: 2 }
 
   // ---------- Sözel Mantık (eklendi) ----------
   { id: "ltur-sm001", ders: "turkce", unite: "Sözel Mantık", soru: "Ali, Boran'dan uzun; Boran, Cem'den kısa; Cem, Ali'den kısadır. Bu üç kişiden en uzun olan kimdir?", cevap: "Ali", secenekler: ["Ali","Boran","Cem","Belirlenemez"], lgsKapsam: true },
