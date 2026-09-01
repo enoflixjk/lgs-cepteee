@@ -6,7 +6,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTema, FONT } from '../lib/tema';
 import { supabase } from '../lib/supabase';
-import { kayit_ol, giris_yap, cikis_yap, sifre_sifirla, buluta_yukle, buluttan_indir, hesabi_sil } from '../lib/bulut';
+import { kayit_ol, giris_yap, cikis_yap, sifre_sifirla, buluta_yukle, buluttan_indir, hesabi_sil, googleIleGiris } from '../lib/bulut';
 
 export default function HesapEkrani({ onVeriDegisti, kapiModu, basliksiz, onGec }) {
   const { P } = useTema();
@@ -73,6 +73,26 @@ export default function HesapEkrani({ onVeriDegisti, kapiModu, basliksiz, onGec 
             </Text>
           </React.Fragment>
         )}
+
+        <TouchableOpacity
+          disabled={mesgul}
+          style={[s.googleDugme, mesgul && { opacity: 0.5 }]}
+          onPress={() => calistir('Giriş yapıldı.', googleIleGiris)}>
+          {mesgul
+            ? <ActivityIndicator color={P.ink} />
+            : (
+              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Text style={{ fontFamily: FONT.monoBold, fontSize: 15, color: '#1F1F1F' }}>G</Text>
+                <Text style={[s.googleDugmeYazi, { marginLeft: 10 }]}>GOOGLE İLE DEVAM ET</Text>
+              </View>
+            )}
+        </TouchableOpacity>
+
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 18 }}>
+          <View style={{ flex: 1, height: 1, backgroundColor: P.line }} />
+          <Text style={{ fontFamily: FONT.mono, fontSize: 12, color: P.inkFaint, marginHorizontal: 10 }}>VEYA</Text>
+          <View style={{ flex: 1, height: 1, backgroundColor: P.line }} />
+        </View>
 
         <View style={s.kart}>
           <Text style={s.etiket}>{kayitModu ? 'YENİ HESAP' : 'GİRİŞ YAP'}</Text>
@@ -253,6 +273,11 @@ function yapStil(P) {
       alignItems: 'center', marginTop: 20, backgroundColor: P.yuzey,
     },
     dugmeYazi: { fontFamily: FONT.monoBold, fontSize: 15, color: P.ink, letterSpacing: 1 },
+    googleDugme: {
+      borderWidth: 1.5, borderColor: '#DADCE0', borderRadius: 4, paddingVertical: 14,
+      alignItems: 'center', backgroundColor: '#FFFFFF',
+    },
+    googleDugmeYazi: { fontFamily: FONT.monoBold, fontSize: 14, color: '#1F1F1F', letterSpacing: 1 },
     baglanti: { fontFamily: FONT.govde, fontSize: 18, color: P.red, textAlign: 'center' },
     durum: { borderLeftWidth: 2, paddingLeft: 10, paddingVertical: 6, marginTop: 6 },
     durumOk: { borderLeftColor: P.ink },

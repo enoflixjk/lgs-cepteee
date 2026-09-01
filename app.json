@@ -2,10 +2,17 @@
   "expo": {
     "name": "Ligo LGS Cepte",
     "slug": "lgs-cards",
-    "version": "4.33.0",
+    "version": "4.53.3",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/8fddc7bb-fe5a-4c88-b26e-9e65415f685b",
+      "fallbackToCacheTimeout": 0
+    },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -14,7 +21,7 @@
         "backgroundColor": "#10121A"
       },
       "package": "com.enoflixjk.lgscards",
-      "versionCode": 89,
+      "versionCode": 116,
       "permissions": [
         "VIBRATE",
         "RECEIVE_BOOT_COMPLETED",
@@ -35,7 +42,8 @@
         {
           "color": "#B23A2E"
         }
-      ]
+      ],
+      "expo-web-browser"
     ],
     "extra": {
       "eas": {
