@@ -2,7 +2,8 @@
   "expo": {
     "name": "Ligo LGS Cepte",
     "slug": "lgs-cards",
-    "version": "4.53.3",
+    "version": "4.70.0",
+    "scheme": "ligolgscepte",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "dark",
@@ -21,7 +22,7 @@
         "backgroundColor": "#10121A"
       },
       "package": "com.enoflixjk.lgscards",
-      "versionCode": 116,
+      "versionCode": 146,
       "permissions": [
         "VIBRATE",
         "RECEIVE_BOOT_COMPLETED",
@@ -43,7 +44,28 @@
           "color": "#B23A2E"
         }
       ],
-      "expo-web-browser"
+      [
+        "react-native-google-mobile-ads",
+        {
+          "androidAppId": "ca-app-pub-3940256099942544~3347511713",
+          "iosAppId": "ca-app-pub-3940256099942544~1458002511"
+        }
+      ],
+      [
+        "react-native-android-widget",
+        {
+          "widgets": [
+            {
+              "name": "Seri",
+              "label": "Ligo Seri Widget",
+              "minWidth": "110dp",
+              "minHeight": "110dp",
+              "description": "Güncel gün serini ana ekranda gösterir",
+              "updatePeriodMillis": 1800000
+            }
+          ]
+        }
+      ]
     ],
     "extra": {
       "eas": {

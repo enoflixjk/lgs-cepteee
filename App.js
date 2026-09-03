@@ -2,10 +2,10 @@ import React, { useState, useEffect, useRef } from 'react';
 
 // Bu sabiti app.json'daki "version" alanıyla senkron tut — yeni bir
 // paket (expo-constants) eklemeden, elle güncellenen basit bir gösterge.
-const UYGULAMA_SURUMU = '4.54.0';
+const UYGULAMA_SURUMU = '4.70.0';
 import {
   View, Text, TouchableOpacity, ScrollView, TextInput, Animated, PanResponder,
-  StyleSheet, StatusBar, Alert, Dimensions, Easing, AppState, Image, Modal, Share, Linking
+  StyleSheet, StatusBar, Alert, Dimensions, Easing, AppState, Image, Modal, Share, Linking, ActivityIndicator,
 } from 'react-native';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Polyline, Line as SvgLine, Circle } from 'react-native-svg';
@@ -31,7 +31,7 @@ import {
   Check, Clock, Layers, ListChecks, Lightbulb,
   Footprints, Flame, CalendarCheck, ShieldCheck, Trophy, Medal, BookMarked,
   Sparkles, Rocket, BrainCircuit, Timer, ChartColumn, Zap, Target, BookOpenCheck, NotebookPen, Plus, Lock, Crown, Share2,
-  Image as ImageIcon, Calculator, CircleCheckBig, TrendingUp, TrendingDown, StickyNote, Info, Users, QrCode,
+  Image as ImageIcon, Calculator, CircleCheckBig, TrendingUp, TrendingDown, StickyNote, Info, Users, QrCode, Snowflake, Gift, CalendarClock, PlayCircle, Sprout, TreeDeciduous, Hand,
 } from 'lucide-react-native';
 import { TemaSaglayici, useTema, FOCUS, FONT, KAGIT } from './lib/tema';
 import HesapEkrani from './ekranlar/HesapEkrani';
@@ -39,7 +39,7 @@ import { supabase } from './lib/supabase';
 import { dersGorseli } from './lib/gorseller';
 import { ligoMesaji, bildirimleriPlanla } from './lib/ligo';
 import { ligoGorsel, ligoIfadesi } from './lib/ligoGorsel';
-import { disSoruEkle, odakOturumuKaydet, rumuzAyarla, liderlikSoru, davetKullan, davetSayisiniGetir, grupOlustur, grupKatil, gruptanAyril, kendiGrubunuGetir, grupUyeleriniGetir } from './lib/bulut';
+import { disSoruEkle, odakOturumuKaydet, rumuzAyarla, liderlikSoru, davetKullan, davetSayisiniGetir, grupOlustur, grupKatil, gruptanAyril, kendiGrubunuGetir, grupUyeleriniGetir, sonAktifligimiGuncelle, grupAktifSayisiniGetir } from './lib/bulut';
 import { abonelikBaslat, premiumMi, paketleriGetir, satinAl, satinAlmalariGeriYukle, abonelikKullanilabilir } from './lib/abonelik';
 import { sesCal, sesAyarla } from './lib/sesler';
 import { useIvmeTakip } from './lib/sallama';
@@ -133,7 +133,61 @@ function seriKademesi(seri) {
 // Seri uzadıkça alevin görseli kademeli olarak büyüyüp güçlenir.
 function SeriAlevi({ seri }) {
   const k = seriKademesi(seri);
-  return <Flame size={k.boyut} color={k.renk} fill={k.dolgu} strokeWidth={2.4} />;
+  const olcek = useRef(new Animated.Value(1)).current;
+  const ilkYuklemeMi = useRef(true);
+
+  // Seri her arttığında (kilometre taşı olsun olmasın) alev ikonu küçük
+  // bir "pulse" ile tepki verir — Brilliant'ın "Streak Pulse" anına
+  // karşılık gelen, hafif ve her gün tekrarlanan bir dokunuş. İlk
+  // yüklemede (uygulama yeni açıldığında) tetiklenmez, sadece gerçek
+  // bir artış olduğunda.
+  useEffect(() => {
+    if (ilkYuklemeMi.current) { ilkYuklemeMi.current = false; return; }
+    Animated.sequence([
+      Animated.spring(olcek, { toValue: 1.4, useNativeDriver: true, friction: 3, tension: 200 }),
+      Animated.spring(olcek, { toValue: 1, useNativeDriver: true, friction: 4, tension: 140 }),
+    ]).start();
+  }, [seri]);
+
+  // Alevin üstünden sürekli yükselen küçük kor parçacıkları — Airlearn'ın
+  // "Streak Fire" animasyonundan esinlenildi. Sadece gerçek bir seri
+  // varken (seri > 0) görünür; sönmüş bir alevden kor yükselmez.
+  const korlar = useRef([0, 1, 2].map(() => new Animated.Value(0))).current;
+  useEffect(() => {
+    if (seri <= 0) return;
+    const dongular = korlar.map((deger, i) =>
+      Animated.loop(
+        Animated.sequence([
+          Animated.delay(i * 700),
+          Animated.timing(deger, { toValue: 1, duration: 1600, useNativeDriver: true }),
+          Animated.timing(deger, { toValue: 0, duration: 0, useNativeDriver: true }),
+          Animated.delay((2 - i) * 500),
+        ])
+      )
+    );
+    dongular.forEach(d => d.start());
+    return () => dongular.forEach(d => d.stop());
+  }, [seri > 0]);
+
+  return (
+    <View style={{ alignItems: 'center', justifyContent: 'center' }}>
+      {seri > 0 && korlar.map((deger, i) => (
+        <Animated.View key={i} pointerEvents="none" style={{
+          position: 'absolute', top: -2, left: '50%', marginLeft: i === 0 ? -5 : i === 1 ? 1 : -1,
+          width: 4, height: 4, borderRadius: 2, backgroundColor: k.renk,
+          opacity: deger.interpolate({ inputRange: [0, 0.15, 0.8, 1], outputRange: [0, 0.85, 0.4, 0] }),
+          transform: [
+            { translateY: deger.interpolate({ inputRange: [0, 1], outputRange: [0, -(k.boyut * 0.9)] }) },
+            { translateX: deger.interpolate({ inputRange: [0, 0.5, 1], outputRange: [0, i === 1 ? 4 : -4, 0] }) },
+            { scale: deger.interpolate({ inputRange: [0, 0.3, 1], outputRange: [0.4, 1, 0.2] }) },
+          ],
+        }} />
+      ))}
+      <Animated.View style={{ transform: [{ scale: olcek }] }}>
+        <Flame size={k.boyut} color={k.renk} fill={k.dolgu} strokeWidth={2.4} />
+      </Animated.View>
+    </View>
+  );
 }
 
 const ROZETLER = [
@@ -167,12 +221,202 @@ const srsGuncelle = (d, dogru) => {
 const shuffle = (arr) => [...arr].sort(() => Math.random() - 0.5);
 const bugunTarihi = () => new Date().toISOString().split('T')[0];
 
+// Zaman Sınırlı Etkinlik — hafta sonları tüm XP kazanımları 2 katına
+// çıkıyor (Duolingo'nun "Double XP Weekend" etkinliğinin karşılığı).
+// Yerel saate göre değerlendiriliyor; sunucu/takvim yönetimi gerekmiyor.
+const haftaSonuMu = () => {
+  const gun = new Date().getDay(); // 0 = Pazar, 6 = Cumartesi
+  return gun === 0 || gun === 6;
+};
+
+// Yıl+hafta numarasını "2026-H36" gibi bir anahtara çevirir — haftalık
+// recap'in "bu hafta zaten gösterildi mi" kontrolü için kullanılır.
+const haftaAnahtari = (tarih = new Date()) => {
+  const d = new Date(Date.UTC(tarih.getFullYear(), tarih.getMonth(), tarih.getDate()));
+  const gun = (d.getUTCDay() + 6) % 7; // Pazartesi = 0
+  d.setUTCDate(d.getUTCDate() - gun + 3); // o haftanın Perşembesi
+  const yilBasi = new Date(Date.UTC(d.getUTCFullYear(), 0, 4));
+  const haftaNo = 1 + Math.round(((d - yilBasi) / 86400000 - 3 + ((yilBasi.getUTCDay() + 6) % 7)) / 7);
+  return `${d.getUTCFullYear()}-H${haftaNo}`;
+};
+
+// Son 7 günün ders bazında kart sayılarını toplayıp, o haftanın
+// "Haftalık Recap"i için gereken tüm rakamları tek seferde hesaplar.
+function haftalikRecapHesapla(gunluk, gunlukDers) {
+  const gunler = [];
+  const bugun = new Date();
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(bugun);
+    d.setDate(bugun.getDate() - i);
+    gunler.push(d.toISOString().split('T')[0]);
+  }
+  const toplamKart = gunler.reduce((t, g) => t + (gunluk?.[g] || 0), 0);
+  const aktifGunSayisi = gunler.filter(g => (gunluk?.[g] || 0) > 0).length;
+  const dersToplam = {};
+  gunler.forEach(g => {
+    const oGun = gunlukDers?.[g] || {};
+    Object.keys(oGun).forEach(ders => { dersToplam[ders] = (dersToplam[ders] || 0) + oGun[ders]; });
+  });
+  let enCokDers = null, enCokSayi = 0;
+  Object.entries(dersToplam).forEach(([ders, sayi]) => {
+    if (sayi > enCokSayi) { enCokDers = ders; enCokSayi = sayi; }
+  });
+  return {
+    toplamKart, aktifGunSayisi, enCokDers, enCokSayi,
+    tahminiXp: toplamKart * 10, // Standart ödül 10 XP/kart; bonus/kombo nadir istisnalar, tahmini yeterli
+  };
+}
+
+// ============================================================
+// GÜNLÜK MEYDAN OKUMA — her gün DEĞİŞEN, rutini kıran küçük bir
+// hedef. Duolingo'nun "Daily Quest"lerinden esinlenildi. Şablon,
+// yılın gününe göre deterministik seçiliyor (herkes o gün AYNI
+// meydan okumayı görür, sunucu gerektirmez). İlerleme, zaten
+// tutulan gunluk/gunlukDers verisinden hesaplanıyor — yeni bir
+// takip sistemi kurmaya gerek kalmadı.
+// ============================================================
+const GUNLUK_MEYDAN_OKUMA_SABLONLARI = [
+  {
+    tip: 'coklu_ders',
+    hedefSabit: 3,
+    baslik: (h) => `Bugün ${h} farklı dersten kart çöz`,
+    ikonAdi: 'Layers',
+  },
+  {
+    tip: 'toplam_kart',
+    baslik: (h) => `Bugün toplam ${h} kart çöz`,
+    ikonAdi: 'Zap',
+  },
+  {
+    tip: 'tek_ders_yogun',
+    hedefSabit: 20,
+    baslik: (h) => `Bugün tek bir dersten en az ${h} kart çöz`,
+    ikonAdi: 'Target',
+  },
+];
+
+function gunlukMeydanOkumaHesapla(gunluk, gunlukDers, hedefKart) {
+  const bugunStr = bugunTarihi();
+  const yilGunu = Math.floor((new Date() - new Date(new Date().getFullYear(), 0, 0)) / 86400000);
+  const sablon = GUNLUK_MEYDAN_OKUMA_SABLONLARI[yilGunu % GUNLUK_MEYDAN_OKUMA_SABLONLARI.length];
+  const oGunDersler = gunlukDers?.[bugunStr] || {};
+
+  let hedef, ilerleme;
+  if (sablon.tip === 'coklu_ders') {
+    hedef = sablon.hedefSabit;
+    ilerleme = Object.keys(oGunDersler).length;
+  } else if (sablon.tip === 'toplam_kart') {
+    hedef = Math.max(20, Math.round(hedefKart * 1.5 / 5) * 5); // kişisel hedefin 1.5 katı, 5'e yuvarlanmış
+    ilerleme = gunluk?.[bugunStr] || 0;
+  } else { // tek_ders_yogun
+    hedef = sablon.hedefSabit;
+    ilerleme = Math.max(0, ...Object.values(oGunDersler), 0);
+  }
+
+  return {
+    ...sablon,
+    hedef,
+    ilerleme: Math.min(ilerleme, hedef),
+    tamamlandiMi: ilerleme >= hedef,
+    yuzde: Math.min(100, Math.round((ilerleme / hedef) * 100)),
+  };
+}
+
+// ============================================================
+// ÖDÜLLÜ REKLAM (Rewarded Ad)
+//
+// Kullanıcı İSTEYEREK izliyor, karşılığında bir ödül alıyor —
+// zorla gösterilen bir reklam değil. Premium kullanıcılara ASLA
+// sunulmaz (çağıran taraf bunu zaten kontrol ediyor).
+//
+// react-native-google-mobile-ads henüz kurulu değilse (AdMob hesabı
+// açılmadan önce) require başarısız olur, sessizce onHata çağrılır —
+// uygulama hiçbir zaman çökmez.
+//
+// ÖNEMLİ: Gerçek AdMob hesabı açılınca, aşağıdaki GERCEK_ODUL_BIRIM_ID
+// değeri, AdMob panelinden alınan gerçek "Ödüllü" reklam birimi ID'siyle
+// değiştirilmeli. Şimdilik Google'ın resmi test ID'si kullanılıyor.
+// ============================================================
+const GERCEK_ODUL_BIRIM_ID = 'ca-app-pub-XXXXXXXXXXXXXXXX/YYYYYYYYYY'; // TODO: AdMob hesabı açılınca değiştir
+
+function odulluReklamGoster(onOdulKazanildi, onHata) {
+  try {
+    const { RewardedAd, RewardedAdEventType, TestIds } = require('react-native-google-mobile-ads');
+    const birimId = __DEV__ ? TestIds.REWARDED : GERCEK_ODUL_BIRIM_ID;
+    const reklam = RewardedAd.createForAdRequest(birimId);
+
+    let odulVerildi = false;
+    const temizle = () => {
+      try { kaldirYuklendi(); } catch (e) {}
+      try { kaldirOdul(); } catch (e) {}
+      try { kaldirKapandi(); } catch (e) {}
+    };
+
+    const kaldirYuklendi = reklam.addAdEventListener(RewardedAdEventType.LOADED, () => {
+      reklam.show();
+    });
+    const kaldirOdul = reklam.addAdEventListener(RewardedAdEventType.EARNED_REWARD, () => {
+      odulVerildi = true;
+      onOdulKazanildi();
+    });
+    // 'CLOSED' olayı bazı sürümlerde farklı adlandırılabilir; olmasa
+    // da sorun değil, sadece dinleyici temizliği eksik kalır.
+    let kaldirKapandi = () => {};
+    if (RewardedAdEventType.CLOSED) {
+      kaldirKapandi = reklam.addAdEventListener(RewardedAdEventType.CLOSED, () => {
+        temizle();
+        if (!odulVerildi) onHata && onHata();
+      });
+    }
+
+    reklam.load();
+    // Reklam 15 saniye içinde yüklenmezse pes et, kullanıcıyı bekletme.
+    setTimeout(() => { if (!odulVerildi) { temizle(); } }, 15000);
+  } catch (e) {
+    onHata && onHata();
+  }
+}
+
+// Android ana ekranındaki Seri Widget'ını anında günceller. Paket
+// henüz kurulmamışsa (widget kurulumu tamamlanmadıysa) require
+// başarısız olur, sessizce hiçbir şey yapmaz — uygulama çökmez.
+// AsyncStorage'a zaten 'lgs_seri' yazıldığı için widget periyodik
+// güncellemede zaten doğru değeri bulur; bu fonksiyon sadece o 30
+// dakikalık bekleyişi atlayıp anında tazelemeyi sağlar.
+function widgetiGuncelle(seri) {
+  try {
+    const { requestWidgetUpdate } = require('react-native-android-widget');
+    const { SeriWidget } = require('./widgets/SeriWidget');
+    requestWidgetUpdate({
+      widgetName: 'Seri',
+      renderWidget: () => <SeriWidget seri={seri} />,
+      widgetNotFound: () => {}, // Kullanıcı widget'ı hiç eklememişse sorun değil
+    });
+  } catch (e) {
+    // react-native-android-widget kurulu değil veya widget eklenmemiş — sessizce geç
+  }
+}
+
 // Günün sorusu — tarihe göre sabit (deterministik) bir kart seçer,
 // aynı gün içinde her açılışta aynı soru çıkar, ertesi gün değişir.
 // Öncelik henüz tam öğrenilmemiş (seviye < 3) kartlarda — böylece
 // bu küçük dokunuş da gerçekten öğrenmeye katkı sağlar.
 function gununSorusunuSec(srs) {
   const tarih = bugunTarihi();
+  let hash = 0;
+  for (let i = 0; i < tarih.length; i++) hash = (hash * 31 + tarih.charCodeAt(i)) >>> 0;
+
+  const ogrenilmemis = CARDS.filter(c => (srs[c.id] || yeniD(c.id)).seviye < 3 && c.secenekler);
+  const havuz = ogrenilmemis.length > 0 ? ogrenilmemis : CARDS.filter(c => c.secenekler);
+  if (havuz.length === 0) return null;
+  return havuz[hash % havuz.length];
+}
+
+// "60 Saniyelik Isınma" için ayrı bir günlük soru seçimi — Günün
+// Sorusu ile aynı mantık (deterministik, gün boyunca sabit) ama farklı
+// bir tuzla karıştırıldığı için genelde farklı bir kart çıkıyor.
+function isinmaSorusunuSec(srs) {
+  const tarih = bugunTarihi() + '-isinma';
   let hash = 0;
   for (let i = 0; i < tarih.length; i++) hash = (hash * 31 + tarih.charCodeAt(i)) >>> 0;
 
@@ -789,6 +1033,53 @@ function SeriKayipMesaji({ eskiSeri, onKapat }) {
   );
 }
 
+// Seri Dondurma kullanıldığında (bir gün kaçırıldığında ama serin
+// korunduğunda) gösterilen kutlama mesajı — Duolingo'nun "streak freeze"
+// mekaniğinin karşılığı. Kayıp değil, korunma anını kutluyor.
+function SeriDonduMesaji({ eskiSeri, kalanDondurma, onKapat }) {
+  const { P } = useTema();
+  const kenar = useSafeAreaInsets();
+  const olcek = useRef(new Animated.Value(0.85)).current;
+  const opak = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.spring(olcek, { toValue: 1, useNativeDriver: true, friction: 6, tension: 70 }),
+      Animated.timing(opak, { toValue: 1, duration: 240, useNativeDriver: true }),
+    ]).start();
+  }, []);
+
+  return (
+    <View style={{
+      position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+      backgroundColor: 'rgba(8,10,16,0.88)', alignItems: 'center', justifyContent: 'center',
+      zIndex: 9996, padding: 28, paddingTop: kenar.top, paddingBottom: kenar.bottom,
+    }}>
+      <Animated.View style={{ opacity: opak, transform: [{ scale: olcek }], alignItems: 'center', width: '100%' }}>
+        <View style={{
+          width: 96, height: 96, borderRadius: 48, backgroundColor: '#3B82F622',
+          alignItems: 'center', justifyContent: 'center', marginBottom: 20,
+        }}>
+          <Snowflake size={48} color="#3B82F6" strokeWidth={2} />
+        </View>
+        <Text style={{ fontFamily: FONT.baslik, fontSize: 27, color: '#FFFFFF', textAlign: 'center' }}>
+          Serin Dondu, Kaybolmadı!
+        </Text>
+        <Text style={{
+          fontFamily: FONT.govde, fontSize: 16, color: 'rgba(255,255,255,0.72)',
+          textAlign: 'center', marginTop: 10, lineHeight: 24, paddingHorizontal: 10,
+        }}>
+          Dün ara vermişsin ama Seri Dondurma hakkını kullanarak {eskiSeri} günlük serini koruduk.{'\n'}
+          Kalan dondurma hakkın: {kalanDondurma}
+        </Text>
+        <View style={{ width: '100%', marginTop: 26 }}>
+          <Dugme etiket="DEVAM EDELİM" renk="#3B82F6" renkKoyu="#1D4ED8" tam onPress={onKapat} />
+        </View>
+      </Animated.View>
+    </View>
+  );
+}
+
 function RozetBildirimi({ rozet, onKapat }) {
   const { P } = useTema();
   const kenar = useSafeAreaInsets();
@@ -915,12 +1206,197 @@ function HolografikParilti({ boyut = 300 }) {
   );
 }
 
-function Kutlama({ tur, seri, xp, hedefKart, veri, onKapat }) {
+// Son 7 günü küçük noktalarla gösteren mini takvim — Duolingo'nun seri
+// ekranındaki haftalık işaretleyiciden esinlenildi. Her nokta o gün en
+// az bir kart çalışılıp çalışılmadığını gösterir.
+// ============================================================
+// HAFTALIK RECAP — Google Fit'in "Weekly Recap Story Sheet"i ve
+// Duolingo'nun yıllık recap'inden esinlenildi: veriyi kuru bir
+// istatistik tablosu olarak değil, sırayla açılan, her biri kendi
+// anını yaşayan slaytlar halinde sunuyor. Dokununca ilerler, X ile
+// her an kapatılabilir.
+// ============================================================
+function HaftalikRecap({ gunluk, gunlukDers, seri, xp, onKapat }) {
+  const { P, DERSLER, koyu } = useTema();
+  const kenar = useSafeAreaInsets();
+  const [slayt, setSlayt] = useState(0);
+  const olcek = useRef(new Animated.Value(0.9)).current;
+  const opak = useRef(new Animated.Value(0)).current;
+
+  const veri = React.useMemo(() => haftalikRecapHesapla(gunluk, gunlukDers), [gunluk, gunlukDers]);
+  const enCokDersBilgi = veri.enCokDers ? DERSLER.find(d => d.id === veri.enCokDers) : null;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.spring(olcek, { toValue: 1, useNativeDriver: true, friction: 6, tension: 70 }),
+      Animated.timing(opak, { toValue: 1, duration: 220, useNativeDriver: true }),
+    ]).start();
+  }, []);
+
+  useEffect(() => {
+    olcek.setValue(0.92);
+    Animated.spring(olcek, { toValue: 1, useNativeDriver: true, friction: 5, tension: 100 }).start();
+    titre.hafif();
+  }, [slayt]);
+
+  const SLAYTLAR = [
+    {
+      renkler: ['#4B7BE8', '#2E4FA8'],
+      icerik: () => (
+        <>
+          {ligoGorsel('mutlu') ? (
+            <Image source={ligoGorsel('mutlu')} style={{ width: 84, height: 84, resizeMode: 'contain', marginBottom: 20 }} />
+          ) : <Sparkles size={64} color="#FFFFFF" strokeWidth={2} style={{ marginBottom: 20 }} />}
+          <Text style={{ fontFamily: FONT.baslik, fontSize: 30, color: '#FFFFFF', textAlign: 'center' }}>Bu Haftan Nasıl Geçti?</Text>
+          <Text style={{ fontFamily: FONT.govde, fontSize: 16, color: 'rgba(255,255,255,0.75)', textAlign: 'center', marginTop: 10 }}>
+            Hadi birlikte bakalım
+          </Text>
+        </>
+      ),
+    },
+    {
+      renkler: ['#27AE60', '#1B7A43'],
+      icerik: () => (
+        <>
+          <Text style={{ fontFamily: FONT.monoBold, fontSize: 14, color: 'rgba(255,255,255,0.7)', letterSpacing: 2, marginBottom: 6 }}>BU HAFTA ÇÖZDÜĞÜN KART</Text>
+          <SayacMetin deger={veri.toplamKart} style={{ fontFamily: FONT.baslik, fontSize: 72, color: '#FFFFFF' }} />
+          <Text style={{ fontFamily: FONT.govde, fontSize: 16, color: 'rgba(255,255,255,0.75)', textAlign: 'center', marginTop: 12 }}>
+            {veri.aktifGunSayisi} gün boyunca çalıştın
+          </Text>
+        </>
+      ),
+    },
+    ...(enCokDersBilgi ? [{
+      renkler: [enCokDersBilgi.renk, enCokDersBilgi.renk + 'AA'],
+      icerik: () => {
+        const DersIkonu = enCokDersBilgi.ikon;
+        return (
+          <>
+            {DersIkonu ? <DersIkonu size={56} color="#FFFFFF" strokeWidth={2} style={{ marginBottom: 12 }} /> : null}
+            <Text style={{ fontFamily: FONT.monoBold, fontSize: 14, color: 'rgba(255,255,255,0.75)', letterSpacing: 2, marginBottom: 6 }}>EN ÇOK ÇALIŞTIĞIN DERS</Text>
+            <Text style={{ fontFamily: FONT.baslik, fontSize: 32, color: '#FFFFFF', textAlign: 'center' }}>{enCokDersBilgi.ad}</Text>
+            <Text style={{ fontFamily: FONT.govde, fontSize: 16, color: 'rgba(255,255,255,0.75)', textAlign: 'center', marginTop: 8 }}>
+              {veri.enCokSayi} kart bu haftaki en çok çalıştığın alandı
+            </Text>
+          </>
+        );
+      },
+    }] : []),
+    {
+      renkler: ['#F97316', '#C2410C'],
+      icerik: () => (
+        <>
+          <Flame size={64} color="#FFFFFF" fill="#FFFFFF" strokeWidth={2} style={{ marginBottom: 16 }} />
+          <Text style={{ fontFamily: FONT.baslik, fontSize: 52, color: '#FFFFFF' }}>{seri} gün</Text>
+          <Text style={{ fontFamily: FONT.govde, fontSize: 16, color: 'rgba(255,255,255,0.75)', textAlign: 'center', marginTop: 8, marginBottom: 18 }}>
+            şu anki serin
+          </Text>
+          <HaftalikTakvim gunluk={gunluk} />
+        </>
+      ),
+    },
+    {
+      renkler: ['#8B5CF6', '#5B21B6'],
+      icerik: () => (
+        <>
+          <Text style={{ fontFamily: FONT.monoBold, fontSize: 14, color: 'rgba(255,255,255,0.75)', letterSpacing: 2, marginBottom: 6 }}>YAKLAŞIK KAZANDIĞIN XP</Text>
+          <SayacMetin deger={veri.tahminiXp} style={{ fontFamily: FONT.baslik, fontSize: 60, color: '#FFFFFF' }} onEk=" XP" />
+          <Text style={{ fontFamily: FONT.govde, fontSize: 16, color: 'rgba(255,255,255,0.75)', textAlign: 'center', marginTop: 16, lineHeight: 24, paddingHorizontal: 20 }}>
+            Böyle devam edersen önümüzdeki hafta çok daha iyi olacak. Görüşürüz! 👋
+          </Text>
+          <View style={{ width: '80%', marginTop: 28 }}>
+            <Dugme etiket="TEŞEKKÜRLER LIGO!" renk="#FFFFFF" renkKoyu="rgba(255,255,255,0.7)" tam onPress={onKapat}
+              yazi={{ color: '#5B21B6' }} />
+          </View>
+        </>
+      ),
+    },
+  ];
+
+  const su = SLAYTLAR[slayt];
+  const sonSlaytMi = slayt === SLAYTLAR.length - 1;
+
+  return (
+    <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 9999 }}>
+      <Animated.View style={{ flex: 1, opacity: opak }}>
+        <LinearGradient colors={su.renkler} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ flex: 1 }}>
+          {/* İlerleme çubukları — Instagram Stories tarzı */}
+          <View style={{ flexDirection: 'row', paddingTop: kenar.top + 12, paddingHorizontal: 16, marginBottom: 8 }}>
+            {SLAYTLAR.map((_, i) => (
+              <View key={i} style={{
+                flex: 1, height: 3, borderRadius: 2, marginHorizontal: 2,
+                backgroundColor: i <= slayt ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.25)',
+              }} />
+            ))}
+          </View>
+          <TouchableOpacity onPress={onKapat} style={{ position: 'absolute', top: kenar.top + 20, right: 16, zIndex: 2 }} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+            <XIkon size={24} color="rgba(255,255,255,0.85)" strokeWidth={2.4} />
+          </TouchableOpacity>
+
+          <Animated.View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, transform: [{ scale: olcek }] }}>
+            {su.icerik()}
+          </Animated.View>
+
+          {/* Dokunma alanları — sol yarı geri, sağ yarı ileri (son slaytta kapanır) */}
+          <View style={{ position: 'absolute', top: 0, left: 0, bottom: 0, width: '38%', flexDirection: 'row' }}>
+            <TouchableOpacity style={{ flex: 1 }} activeOpacity={1} onPress={() => setSlayt(s => Math.max(0, s - 1))} />
+          </View>
+          <View style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: '62%', flexDirection: 'row' }}>
+            <TouchableOpacity style={{ flex: 1 }} activeOpacity={1}
+              onPress={() => sonSlaytMi ? onKapat() : setSlayt(s => Math.min(SLAYTLAR.length - 1, s + 1))} />
+          </View>
+        </LinearGradient>
+      </Animated.View>
+    </View>
+  );
+}
+
+function HaftalikTakvim({ gunluk }) {
+  const { P } = useTema();
+  const gunler = React.useMemo(() => {
+    const etiketler = ['P', 'S', 'Ç', 'P', 'C', 'C', 'P']; // Pzt..Paz kısa harfler
+    const bugun = new Date();
+    const liste = [];
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(bugun);
+      d.setDate(bugun.getDate() - i);
+      const anahtar = d.toISOString().split('T')[0];
+      const gunIndex = (d.getDay() + 6) % 7; // Pazartesi = 0
+      liste.push({ anahtar, etiket: etiketler[gunIndex], tamamlandi: !!(gunluk && gunluk[anahtar] > 0), bugunMu: i === 0 });
+    }
+    return liste;
+  }, [gunluk]);
+
+  return (
+    <View style={{ flexDirection: 'row', marginTop: 4 }}>
+      {gunler.map((g, i) => (
+        <View key={g.anahtar} style={{ alignItems: 'center', marginHorizontal: 5 }}>
+          <View style={{
+            width: 26, height: 26, borderRadius: 13,
+            backgroundColor: g.tamamlandi ? '#F97316' : 'rgba(255,255,255,0.08)',
+            borderWidth: g.bugunMu && !g.tamamlandi ? 1.5 : 0,
+            borderColor: '#F97316',
+            alignItems: 'center', justifyContent: 'center',
+          }}>
+            {g.tamamlandi && <Check size={14} color="#FFFFFF" strokeWidth={3} />}
+          </View>
+          <Text style={{
+            fontFamily: FONT.monoBold, fontSize: 10, marginTop: 4,
+            color: g.bugunMu ? '#F97316' : 'rgba(255,255,255,0.4)',
+          }}>{g.etiket}</Text>
+        </View>
+      ))}
+    </View>
+  );
+}
+
+function Kutlama({ tur, seri, xp, hedefKart, veri, onKapat, gunluk }) {
   const { P } = useTema();
   const olcek = useRef(new Animated.Value(0.7)).current;
   const opak = useRef(new Animated.Value(0)).current;
   const seviyeMi = tur === 'seviye';
   const davetMi = tur === 'davet';
+  const seriMilestoneMi = tur === 'seri_milestone';
   const gorselRef = useRef(null);
   const [paylasiliyor, setPaylasiliyor] = useState(false);
 
@@ -932,7 +1408,7 @@ function Kutlama({ tur, seri, xp, hedefKart, veri, onKapat }) {
     ]).start();
   }, []);
 
-  const vurgu = seviyeMi ? '#FFD966' : davetMi ? '#8E54E9' : P.yesil;
+  const vurgu = seviyeMi ? '#FFD966' : davetMi ? '#8E54E9' : seriMilestoneMi ? '#F97316' : P.yesil;
 
   // Kutlama görselini yakalayıp Instagram/WhatsApp'ta paylaşılabilecek
   // bir dosya olarak paylaşır. react-native-view-shot ve expo-sharing
@@ -956,6 +1432,8 @@ function Kutlama({ tur, seri, xp, hedefKart, veri, onKapat }) {
       // paylaşımına sessizce düş.
       const metin = davetMi
         ? `Ligo LGS Cepte'de bir arkadaşımı davet ettim, +${(veri?.sayi || 1) * 50} XP kazandım! 🎉`
+        : seriMilestoneMi
+        ? `Ligo LGS Cepte'de ${seri} günlük seriye ulaştım! 🔥\n${xp} XP ile aralıksız çalışıyorum.`
         : `Ligo LGS Cepte'de seviye atladım: ${veri?.yeniSev}! 🎉\n${xp} XP ile ${seri} günlük seri sürdürüyorum.`;
       Share.share({ message: metin }).catch(() => {});
     } finally {
@@ -1013,8 +1491,24 @@ function Kutlama({ tur, seri, xp, hedefKart, veri, onKapat }) {
               fontFamily: FONT.govde, fontSize: 17, color: 'rgba(255,255,255,0.72)',
               textAlign: 'center', marginTop: 8, lineHeight: 25,
             }}>
-              {veri?.sayi > 1 ? `${veri.sayi} arkadaşın davetini kullandı!` : 'Bir arkadaşın davetini kullandı!'}
+              {veri?.sayi > 1 ? `${veri.sayi} arkadaşın davetini kullandı! +${veri.sayi} bonus deneme hakkı da kazandın.` : 'Bir arkadaşın davetini kullandı! +1 bonus deneme hakkı da kazandın.'}
             </Text>
+          </>
+        ) : seriMilestoneMi ? (
+          <>
+            <Text style={{ fontFamily: FONT.monoBold, fontSize: 14, color: vurgu, letterSpacing: 2, marginBottom: 4 }}>
+              SERİ REKORU
+            </Text>
+            <Text style={{ fontFamily: FONT.baslik, fontSize: 44, color: '#FFFFFF', textAlign: 'center' }}>
+              {seri} gün 🔥
+            </Text>
+            <Text style={{
+              fontFamily: FONT.govde, fontSize: 17, color: 'rgba(255,255,255,0.72)',
+              textAlign: 'center', marginTop: 8, lineHeight: 25,
+            }}>
+              {seri} gündür aralıksız çalışıyorsun — bu gerçek bir disiplin. Böyle devam!
+            </Text>
+            <HaftalikTakvim gunluk={gunluk} />
           </>
         ) : (
           <>
@@ -1049,7 +1543,7 @@ function Kutlama({ tur, seri, xp, hedefKart, veri, onKapat }) {
           ))}
         </View>
 
-        {(seviyeMi || davetMi) && (
+        {(seviyeMi || davetMi || seriMilestoneMi) && (
           <TouchableOpacity
             onPress={() => { titre.hafif(); gorselPaylas(); }}
             disabled={paylasiliyor}
@@ -1076,53 +1570,70 @@ function Kutlama({ tur, seri, xp, hedefKart, veri, onKapat }) {
       </Animated.View>
 
       {/* Ekran dışında, görünmez ama tam render edilmiş — sadece
-          yakalanıp paylaşılmak için var. Kullanıcı bunu hiç görmüyor. */}
+          yakalanıp paylaşılmak için var. Kullanıcı bunu hiç görmüyor.
+          Instagram Story'de paylaşılmaya değecek kadar gösterişli
+          olsun diye düz renk yerine gradyan arka plan kullanıyor. */}
       <View style={{ position: 'absolute', left: -9999, top: 0 }} pointerEvents="none">
-        <View ref={gorselRef} collapsable={false} style={{
-          width: 320, height: 568, backgroundColor: seviyeMi ? '#1A1D2E' : '#241C3E',
-          alignItems: 'center', justifyContent: 'center', padding: 28,
-        }}>
-          <View style={{
-            position: 'absolute', top: -80, left: -60, width: 220, height: 220,
-            borderRadius: 110, backgroundColor: vurgu + '22',
-          }} />
-          <View style={{
-            position: 'absolute', bottom: -90, right: -70, width: 240, height: 240,
-            borderRadius: 120, backgroundColor: vurgu + '18',
-          }} />
+        <View ref={gorselRef} collapsable={false} style={{ width: 320, height: 568 }}>
+          <LinearGradient
+            colors={
+              seviyeMi ? ['#2A2340', '#4A3B1E'] :
+              davetMi ? ['#241C3E', '#3D2A5C'] :
+              seriMilestoneMi ? ['#2E1A12', '#5C2D0F'] :
+              ['#1A1D2E', '#2A2340']
+            }
+            start={{ x: 0.1, y: 0 }} end={{ x: 0.9, y: 1 }}
+            style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 28, overflow: 'hidden' }}
+          >
+            {/* Holografik his veren çapraz parlama şeridi */}
+            <View style={{
+              position: 'absolute', top: -60, left: -140, width: 180, bottom: -60,
+              backgroundColor: 'rgba(255,255,255,0.06)', transform: [{ rotate: '18deg' }],
+            }} />
+            <View style={{
+              position: 'absolute', top: -80, left: -60, width: 220, height: 220,
+              borderRadius: 110, backgroundColor: vurgu + '30',
+            }} />
+            <View style={{
+              position: 'absolute', bottom: -90, right: -70, width: 240, height: 240,
+              borderRadius: 120, backgroundColor: vurgu + '22',
+            }} />
 
-          {ligoGorsel('kutlama') && (
-            <Image source={ligoGorsel('kutlama')} style={{ width: 140, height: 140, resizeMode: 'contain', marginBottom: 24 }} />
-          )}
+            {seriMilestoneMi ? (
+              <Flame size={72} color={vurgu} fill={vurgu} strokeWidth={1.5} style={{ marginBottom: 20 }} />
+            ) : ligoGorsel('kutlama') ? (
+              <Image source={ligoGorsel('kutlama')} style={{ width: 140, height: 140, resizeMode: 'contain', marginBottom: 24 }} />
+            ) : null}
 
-          <Text style={{ fontFamily: FONT.monoBold, fontSize: 15, color: vurgu, letterSpacing: 2, marginBottom: 8 }}>
-            {seviyeMi ? 'SEVİYE ATLADIM' : 'ARKADAŞ DAVET ETTİM'}
-          </Text>
-          <Text style={{ fontFamily: FONT.baslik, fontSize: 30, color: '#FFFFFF', textAlign: 'center', marginBottom: 20 }}>
-            {seviyeMi ? veri?.yeniSev : `+${(veri?.sayi || 1) * 50} XP`}
-          </Text>
+            <Text style={{ fontFamily: FONT.monoBold, fontSize: 15, color: vurgu, letterSpacing: 2, marginBottom: 8 }}>
+              {seviyeMi ? 'SEVİYE ATLADIM' : seriMilestoneMi ? 'SERİ REKORU' : 'ARKADAŞ DAVET ETTİM'}
+            </Text>
+            <Text style={{ fontFamily: FONT.baslik, fontSize: 30, color: '#FFFFFF', textAlign: 'center', marginBottom: 20 }}>
+              {seviyeMi ? veri?.yeniSev : seriMilestoneMi ? `${seri} GÜN` : `+${(veri?.sayi || 1) * 50} XP`}
+            </Text>
 
-          <View style={{ flexDirection: 'row', marginBottom: 30 }}>
-            {[
-              { v: seri, l: 'GÜN SERİ' },
-              { v: xp, l: 'TOPLAM XP' },
-            ].map((it, i) => (
-              <View key={it.l} style={{
-                alignItems: 'center', marginHorizontal: 14,
-                backgroundColor: 'rgba(255,255,255,0.06)',
-                borderWidth: 1, borderColor: 'rgba(255,255,255,0.14)',
-                borderRadius: 16, paddingVertical: 14, paddingHorizontal: 20,
-              }}>
-                <Text style={{ fontFamily: FONT.baslik, fontSize: 20, color: vurgu }}>{it.v}</Text>
-                <Text style={{ fontFamily: FONT.govdeKalin, fontSize: 10, color: 'rgba(255,255,255,0.5)', marginTop: 2 }}>{it.l}</Text>
-              </View>
-            ))}
-          </View>
+            <View style={{ flexDirection: 'row', marginBottom: 30 }}>
+              {[
+                { v: seri, l: 'GÜN SERİ' },
+                { v: xp, l: 'TOPLAM XP' },
+              ].map((it, i) => (
+                <View key={it.l} style={{
+                  alignItems: 'center', marginHorizontal: 14,
+                  backgroundColor: 'rgba(255,255,255,0.08)',
+                  borderWidth: 1, borderColor: 'rgba(255,255,255,0.18)',
+                  borderRadius: 16, paddingVertical: 14, paddingHorizontal: 20,
+                }}>
+                  <Text style={{ fontFamily: FONT.baslik, fontSize: 20, color: vurgu }}>{it.v}</Text>
+                  <Text style={{ fontFamily: FONT.govdeKalin, fontSize: 10, color: 'rgba(255,255,255,0.6)', marginTop: 2 }}>{it.l}</Text>
+                </View>
+              ))}
+            </View>
 
-          <Text style={{ fontFamily: FONT.baslik, fontSize: 16, color: '#FFFFFF' }}>Ligo LGS Cepte</Text>
-          <Text style={{ fontFamily: FONT.govde, fontSize: 12, color: 'rgba(255,255,255,0.5)', marginTop: 3 }}>
-            LGS'ye Ligo ile hazırlan
-          </Text>
+            <Text style={{ fontFamily: FONT.baslik, fontSize: 16, color: '#FFFFFF' }}>Ligo LGS Cepte</Text>
+            <Text style={{ fontFamily: FONT.govde, fontSize: 12, color: 'rgba(255,255,255,0.5)', marginTop: 3 }}>
+              LGS'ye Ligo ile hazırlan
+            </Text>
+          </LinearGradient>
         </View>
       </View>
     </View>
@@ -1174,6 +1685,34 @@ const SINAV_NOTLARI_ANAHTAR = 'lgs_sinav_notlari';
 const DERS_MAKS_NET = Object.fromEntries(
   Object.entries(LGS_DAGILIM).map(([id, d]) => [id, d.soru])
 );
+
+// Boş durumlarda (henüz veri yokken) gösterilen Ligo — Claude Code'un
+// boş ekran maskot deseninden esinlenilen, hafif ve sürekli bir "nefes
+// alma" animasyonu. Sahne boş olsa da Ligo cansız durmuyor.
+function LigoBosDurum({ boyut = 96, marginBottom = 16, opaklik = 1 }) {
+  const olcek = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    const dongu = Animated.loop(
+      Animated.sequence([
+        Animated.timing(olcek, { toValue: 1.05, duration: 1400, useNativeDriver: true, easing: Easing.inOut(Easing.sin) }),
+        Animated.timing(olcek, { toValue: 1, duration: 1400, useNativeDriver: true, easing: Easing.inOut(Easing.sin) }),
+      ])
+    );
+    dongu.start();
+    return () => dongu.stop();
+  }, []);
+
+  const gorsel = ligoGorsel('normal');
+  if (!gorsel) return null;
+
+  return (
+    <Animated.Image
+      source={gorsel}
+      style={{ width: boyut, height: boyut, resizeMode: 'contain', marginBottom, opacity: opaklik, transform: [{ scale: olcek }] }}
+    />
+  );
+}
 
 function SinavNotlariEkrani() {
   const { P, s: st, DERSLER, koyu } = useTema();
@@ -1394,9 +1933,7 @@ function SinavNotlariEkrani() {
 
       {notlar.length === 0 && !formAcik && (
         <View style={{ alignItems: 'center', paddingVertical: 30 }}>
-          {ligoGorsel('normal') && (
-            <Image source={ligoGorsel('normal')} style={{ width: 100, height: 100, resizeMode: 'contain', marginBottom: 16 }} />
-          )}
+          <LigoBosDurum boyut={100} marginBottom={16} />
           <Text style={{
             fontFamily: FONT.govde, fontSize: 16, color: P.inkSoft,
             textAlign: 'center', lineHeight: 23,
@@ -1577,6 +2114,43 @@ function OdakKadrani({ dakika, onDegis, renk, renkKoyu }) {
 // durumda ekran kendini dürüstçe açıklar, sahte bir satın alma
 // akışı göstermez.
 // ============================================================
+// Premium ekranı açılınca Ligo'nun dikkat çeken küçük zıplaması —
+// Brilliant/Koji'nin "Bounce Premium Upsell" anından esinlenildi.
+// Görsel yoksa eski Sparkles ikonuna sessizce düşer.
+function PremiumLigoZipla() {
+  const olcek = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    const dongu = Animated.loop(
+      Animated.sequence([
+        Animated.timing(olcek, { toValue: 1, duration: 500, useNativeDriver: true }),
+        Animated.spring(olcek, { toValue: 1.18, useNativeDriver: true, friction: 3, tension: 180 }),
+        Animated.spring(olcek, { toValue: 1, useNativeDriver: true, friction: 4, tension: 140 }),
+        Animated.delay(1400),
+      ])
+    );
+    dongu.start();
+    return () => dongu.stop();
+  }, []);
+
+  const gorsel = ligoGorsel('mutlu');
+
+  return (
+    <View style={{
+      width: 84, height: 84, borderRadius: 26, backgroundColor: '#FFB02026',
+      alignItems: 'center', justifyContent: 'center', marginBottom: 18,
+    }}>
+      {gorsel ? (
+        <Animated.Image source={gorsel} style={{ width: 56, height: 56, resizeMode: 'contain', transform: [{ scale: olcek }] }} />
+      ) : (
+        <Animated.View style={{ transform: [{ scale: olcek }] }}>
+          <Sparkles size={40} color="#FFB020" strokeWidth={2} />
+        </Animated.View>
+      )}
+    </View>
+  );
+}
+
 function PremiumEkrani({ onKapat, onSatinAlindi }) {
   const { P } = useTema();
   const kenar = useSafeAreaInsets();
@@ -1595,9 +2169,13 @@ function PremiumEkrani({ onKapat, onSatinAlindi }) {
   }, []);
 
   const OZELLIKLER = [
-    'Günlük kart sınırı kalksın',
-    'Haftalık deneme sınırı kalksın',
-    'Sınırsız Quiz ve deneme sınavı',
+    'Sınırsız kart çalışma — günlük limit yok',
+    'Sınırsız deneme sınavı — istediğin kadar test ol',
+    'İkinci Şans — yanlışlarını anında tekrar çöz',
+    '8 haftalık ilerleme grafiği — gelişimini net gör',
+    'Son 10 deneme birleşik analizi — zayıf noktan netleşsin',
+    'Ayda 3 Seri Dondurma hakkı — bir gün kaçırsan da serin bozulmasın',
+    'Liderlik tablosunda taç rozeti',
   ];
 
   const satinAlBaslat = async () => {
@@ -1631,12 +2209,7 @@ function PremiumEkrani({ onKapat, onSatinAlindi }) {
       </View>
 
       <ScrollView contentContainerStyle={{ padding: 24, alignItems: 'center' }}>
-        <View style={{
-          width: 84, height: 84, borderRadius: 26, backgroundColor: '#FFB02026',
-          alignItems: 'center', justifyContent: 'center', marginBottom: 18,
-        }}>
-          <Sparkles size={40} color="#FFB020" strokeWidth={2} />
-        </View>
+        <PremiumLigoZipla />
 
         <Text style={{ fontFamily: FONT.baslik, fontSize: 26, color: FOCUS.text, textAlign: 'center' }}>
           Ligo Premium
@@ -2101,6 +2674,7 @@ function LiderlikEkrani({ profil, setProfil, hesapVarMi, premium, grupKodu, onGr
   const [grupHata, setGrupHata] = useState('');
   const [grupKoduGirdi, setGrupKoduGirdi] = useState('');
   const [qrTaramaAcik, setQrTaramaAcik] = useState(false);
+  const [aktifArkadasSayisi, setAktifArkadasSayisi] = useState(0);
 
   const yukle = React.useCallback(async () => {
     const s = await liderlikSoru();
@@ -2113,6 +2687,18 @@ function LiderlikEkrani({ profil, setProfil, hesapVarMi, premium, grupKodu, onGr
     if (gorunumSekmesi === 'grup' && grupKodu) {
       grupUyeleriniGetir(grupKodu).then(setGrupUyeleri);
     }
+  }, [gorunumSekmesi, grupKodu]);
+
+  // "Şu an kim çalışıyor" — grup sekmesi açıkken, her 30 saniyede bir
+  // tazelenen canlı bir gösterge. Duolingo'nun sosyal kanıt hissinden
+  // esinlenildi: arkadaşların aktif olduğunu görmek "ben de çalışayım"
+  // dürtüsü yaratır.
+  useEffect(() => {
+    if (gorunumSekmesi !== 'grup' || !grupKodu) return;
+    const getirVeAyarla = () => grupAktifSayisiniGetir(grupKodu).then(setAktifArkadasSayisi);
+    getirVeAyarla();
+    const zamanlayici = setInterval(getirVeAyarla, 30000);
+    return () => clearInterval(zamanlayici);
   }, [gorunumSekmesi, grupKodu]);
 
   const grupOlusturBaslat = async () => {
@@ -2173,9 +2759,7 @@ function LiderlikEkrani({ profil, setProfil, hesapVarMi, premium, grupKodu, onGr
   if (!hesapVarMi) {
     return (
       <View style={{ alignItems: 'center', paddingVertical: 30 }}>
-        {ligoGorsel('normal') && (
-          <Image source={ligoGorsel('normal')} style={{ width: 96, height: 96, resizeMode: 'contain', marginBottom: 16 }} />
-        )}
+        <LigoBosDurum boyut={96} marginBottom={16} />
         <Text style={{ fontFamily: FONT.govde, fontSize: 16, color: P.inkSoft, textAlign: 'center', lineHeight: 23 }}>
           Liderlik tablosuna girmek için{'\n'}hesap açman gerekiyor.
         </Text>
@@ -2315,6 +2899,17 @@ function LiderlikEkrani({ profil, setProfil, hesapVarMi, premium, grupKodu, onGr
                 <Text style={{ fontFamily: FONT.govdeKalin, fontSize: 13, color: '#FFFFFFCC' }}>Ayrıl</Text>
               </TouchableOpacity>
             </View>
+            {aktifArkadasSayisi > 0 && (
+              <View style={{
+                flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start',
+                backgroundColor: '#27AE6018', borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6, marginBottom: 12,
+              }}>
+                <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: '#27AE60', marginRight: 7 }} />
+                <Text style={{ fontFamily: FONT.monoBold, fontSize: 12, color: '#27AE60' }}>
+                  {aktifArkadasSayisi === 1 ? '1 arkadaşın şu an aktif' : `${aktifArkadasSayisi} arkadaşın şu an aktif`}
+                </Text>
+              </View>
+            )}
             {grupUyeleri === null ? (
               <YukleniyorGostergesi boyut={48} />
             ) : grupListesi.length === 0 ? (
@@ -2898,6 +3493,9 @@ function ModSecim({ ders, onBaslat, onGeri, srs, premium, bugun, onLimitAsildi }
               <TouchableOpacity onPress={() => { titre.hafif(); setSecUnite(null); }}
                 style={[st.uniteHap, !secUnite && { borderColor: d.renk, backgroundColor: d.acik }]}>
                 <Text style={[st.hapYazi, !secUnite && { color: d.renk, fontFamily: FONT.monoBold }]}>Tümü</Text>
+                <Text style={{ fontFamily: FONT.mono, fontSize: 10, color: P.inkFaint, marginTop: 2 }}>
+                  {tumKartlar.length} kart
+                </Text>
                 <View style={{ height: 8, backgroundColor: P.bgAlt, borderRadius: 999, marginTop: 9, overflow: 'hidden' }}>
                   <View style={{
                     height: '100%', backgroundColor: d.renk,
@@ -2926,6 +3524,9 @@ function ModSecim({ ders, onBaslat, onGeri, srs, premium, bugun, onLimitAsildi }
                       <Text numberOfLines={1} style={[{ flex: 1 }, st.hapYazi, secili && { color: d.renk, fontFamily: FONT.monoBold }]}>{u}</Text>
                       {kilitli && <Lock size={13} color={P.inkFaint} strokeWidth={2.4} style={{ marginLeft: 6 }} />}
                     </View>
+                    <Text style={{ fontFamily: FONT.mono, fontSize: 10, color: P.inkFaint, marginTop: 2 }}>
+                      {uKartlar.length} kart
+                    </Text>
                     {kapsamDisi ? (
                       <View style={{
                         alignSelf: 'flex-start', backgroundColor: P.altinZemin,
@@ -3019,6 +3620,16 @@ const DOCK_GORSEL = {
   profil: (() => { try { return require('./assets/dock/dock-profil.png'); } catch (e) { return null; } })(),
 };
 
+// Her dock sekmesinin kendine ait, hep görünen bir rengi var — artık
+// tek bir paylaşılan vurgu rengi yerine, Dersler mavi bir kitap gibi,
+// Deneme sarı/amber, Notlar mor, Profil gri hissiyatında.
+const DOCK_RENK = {
+  dersler: '#4B7BE8',
+  deneme: '#E8A93B',
+  notlar: '#8B5CF6',
+  profil: '#64748B',
+};
+
 // ============ SEKME ÇUBUĞU (DOCK) ============
 // Yeni düzen: Dersler solda, Deneme sekmesi, ortada büyütülmüş
 // Ligo maskotu (Ana Sayfa), Notlar ve Profil sağda. Tamamen ikon —
@@ -3030,23 +3641,50 @@ const DOCK_GORSEL = {
 // yeniden yüklenmesinin sebebi tam olarak buydu. Dışarı taşıyınca React
 // aynı bileşen örneğini tanıyor, yalnızca prop değişiyor, native görsel
 // katmanı hiç yıkılıp yeniden kurulmuyor.
-const YanSekme = React.memo(({ id, Ikon, aktif, vurgu, inkFaint, onBas }) => {
-  const ozelGorsel = DOCK_GORSEL[id];
+const YanSekme = React.memo(({ id, Ikon, aktif, renk, onBas, onOlc }) => {
+  const olcek = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    if (aktif) {
+      Animated.sequence([
+        Animated.spring(olcek, { toValue: 1.15, useNativeDriver: true, friction: 4, tension: 200 }),
+        Animated.spring(olcek, { toValue: 1, useNativeDriver: true, friction: 4, tension: 160 }),
+      ]).start();
+    }
+  }, [aktif]);
+
   return (
-    <TouchableOpacity style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}
-      onPress={onBas} activeOpacity={0.7}>
-      <View style={{
-        width: 38, height: 38, borderRadius: 13, alignItems: 'center', justifyContent: 'center',
-        backgroundColor: aktif ? vurgu + '1E' : 'transparent',
+    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}
+      onLayout={(e) => {
+        const { x, width } = e.nativeEvent.layout;
+        onOlc && onOlc(id, x + (width - 44) / 2);
       }}>
-        {ozelGorsel ? (
-          <Image source={ozelGorsel} style={{ width: 22, height: 22, resizeMode: 'contain', opacity: aktif ? 1 : 0.5 }} />
-        ) : (
-          <Ikon size={21} color={aktif ? vurgu : inkFaint} strokeWidth={aktif ? 2.5 : 2} />
-        )}
-      </View>
-      <View style={{ width: 4, height: 4, borderRadius: 2, marginTop: 4, backgroundColor: aktif ? vurgu : 'transparent' }} />
-    </TouchableOpacity>
+      {/* Dokunma alanının kendisi yuvarlatılıp kırpılıyor (overflow: hidden) —
+          aksi halde Android'in dokunma vurgusu/dalgası, alanın gerçek
+          dikdörtgen sınırlarını çiziyor ve simgenin etrafında kare bir
+          iz gibi görünüyordu. Arka plan rengi artık burada değil, TabBar'da
+          kayan tek bir gösterge olarak çiziliyor. */}
+      <TouchableOpacity
+        onPress={onBas} activeOpacity={0.6}
+        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        style={{
+          width: 44, height: 44, borderRadius: 16, overflow: 'hidden',
+          alignItems: 'center', justifyContent: 'center',
+        }}>
+        {/* Özel dock görselleri (assets/dock/*.png) artık kullanılmıyor —
+            her sekmenin kendi rengini (renk={DOCK_RENK...}) net şekilde
+            gösterebilmek için, sabit renkli PNG yerine renklendirilebilir
+            vektör ikona geçildi. */}
+        <Animated.View style={{ transform: [{ scale: olcek }], opacity: aktif ? 1 : 0.55 }}>
+          <Ikon size={21} color={renk} strokeWidth={aktif ? 2.5 : 2} />
+        </Animated.View>
+      </TouchableOpacity>
+      {/* Nokta yerine ince, yumuşak kenarlı bir çizgi — aktifken uzuyor */}
+      <View style={{
+        width: aktif ? 16 : 4, height: 3, borderRadius: 1.5, marginTop: 4,
+        backgroundColor: aktif ? renk : 'transparent',
+      }} />
+    </View>
   );
 });
 
@@ -3056,40 +3694,66 @@ function TabBar({ tab, setTab, premium }) {
   const vurgu = premium ? '#FFD966' : P.neon;
   const ligoRes = ligoGorsel('normal');
   const zeminRengi = koyu ? '#1B1E33' : '#FFFFFF';
+  const zeminRengiKoyu = koyu ? '#20233D' : '#F6F3FE'; // hafif gradyanın ikinci tonu
   const cerceveRengi = koyu ? '#2A2E4C' : '#EDEBF7';
+
+  // Kayan aktif gösterge: her yan sekmenin gerçek x konumu onLayout ile
+  // ölçülüp saklanıyor; aktif sekme değişince tek bir vurgu kapsülü o
+  // konuma yumuşakça kayıyor. 'home' sekmesinde (ayrı bir yüzen düğmesi
+  // olduğu için) gösterge görünmez hale geliyor.
+  const [konumlar, setKonumlar] = useState({});
+  const kayanX = useRef(new Animated.Value(0)).current;
+  const kayanOpaklik = useRef(new Animated.Value(0)).current;
+
+  const konumBildir = (id, x) => {
+    setKonumlar(prev => (prev[id]?.x === x ? prev : { ...prev, [id]: { x } }));
+  };
+
+  useEffect(() => {
+    const k = konumlar[tab];
+    if (k) {
+      Animated.spring(kayanX, { toValue: k.x, useNativeDriver: true, friction: 9, tension: 90 }).start();
+      Animated.timing(kayanOpaklik, { toValue: 1, duration: 180, useNativeDriver: true }).start();
+    } else {
+      Animated.timing(kayanOpaklik, { toValue: 0, duration: 150, useNativeDriver: true }).start();
+    }
+  }, [tab, konumlar]);
 
   return (
     <View style={{ paddingHorizontal: 18, paddingBottom: kenar.bottom + 12, paddingTop: 28, alignItems: 'center' }}>
-      {/* Kapsül — düz zemin, ince çerçeve, hafif gölge. Ortada Ligo için boşluk bırakır. */}
+      {/* Kapsül — hafif gradyanlı zemin, ince çerçeve, hafif gölge. Ortada Ligo için boşluk bırakır. */}
       <View style={[st_golge, {
         width: '100%', height: 62, borderRadius: 31, overflow: 'hidden',
         borderWidth: 1, borderColor: cerceveRengi,
       }]}>
-        {(() => {
-          const Kapsulic = (
-            <>
-              <YanSekme id="dersler" Ikon={Library} aktif={tab === 'dersler'} vurgu={vurgu} inkFaint={P.inkFaint}
-                onBas={() => { titre.hafif(); setTab('dersler'); }} />
-              <YanSekme id="deneme" Ikon={Timer} aktif={tab === 'deneme'} vurgu={vurgu} inkFaint={P.inkFaint}
-                onBas={() => { titre.hafif(); setTab('deneme'); }} />
+        <LinearGradient
+          colors={[zeminRengi, zeminRengiKoyu]}
+          start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+          style={{ flexDirection: 'row', alignItems: 'center', height: '100%', paddingHorizontal: 6 }}>
 
-              <View style={{ flex: 1.4 }} />
+          {/* Kayan vurgu kapsülü — aktif sekmenin kendi rengini alıp oraya kayıyor */}
+          <Animated.View pointerEvents="none" style={{
+            position: 'absolute', top: 9, left: 0, width: 44, height: 44,
+            borderRadius: 16, backgroundColor: (DOCK_RENK[tab] || vurgu) + '1E',
+            opacity: kayanOpaklik, transform: [{ translateX: kayanX }],
+          }} />
 
-              <YanSekme id="notlar" Ikon={NotebookPen} aktif={tab === 'notlar'} vurgu={vurgu} inkFaint={P.inkFaint}
-                onBas={() => { titre.hafif(); setTab('notlar'); }} />
-              <YanSekme id="profil" Ikon={CircleUser} aktif={tab === 'profil'} vurgu={vurgu} inkFaint={P.inkFaint}
-                onBas={() => { titre.hafif(); setTab('profil'); }} />
-            </>
-          );
-          return (
-            <View style={{ flexDirection: 'row', alignItems: 'center', height: '100%', paddingHorizontal: 6, backgroundColor: zeminRengi }}>
-              {Kapsulic}
-            </View>
-          );
-        })()}
+          <YanSekme id="dersler" Ikon={Library} aktif={tab === 'dersler'} renk={DOCK_RENK.dersler}
+            onBas={() => { titre.hafif(); setTab('dersler'); }} onOlc={konumBildir} />
+          <YanSekme id="deneme" Ikon={Timer} aktif={tab === 'deneme'} renk={DOCK_RENK.deneme}
+            onBas={() => { titre.hafif(); setTab('deneme'); }} onOlc={konumBildir} />
+
+          <View style={{ flex: 1.4 }} />
+
+          <YanSekme id="notlar" Ikon={NotebookPen} aktif={tab === 'notlar'} renk={DOCK_RENK.notlar}
+            onBas={() => { titre.hafif(); setTab('notlar'); }} onOlc={konumBildir} />
+          <YanSekme id="profil" Ikon={CircleUser} aktif={tab === 'profil'} renk={DOCK_RENK.profil}
+            onBas={() => { titre.hafif(); setTab('profil'); }} onOlc={konumBildir} />
+        </LinearGradient>
       </View>
 
-      {/* Ligo — kapsülün üstünde yüzen ayrı bir daire, kutulu/kare hissi yok */}
+      {/* Ligo — kapsülün üstünde yüzen ayrı bir daire, kutulu/kare hissi yok.
+          Etrafında hiçbir dolgu/parıltı yok — çevresi tamamen şeffaf kalsın diye. */}
       <TouchableOpacity onPress={() => { titre.hafif(); setTab('home'); }} activeOpacity={0.85}
         style={{ position: 'absolute', top: 0, alignSelf: 'center' }}>
         <View style={[st_golge, {
@@ -3097,6 +3761,13 @@ function TabBar({ tab, setTab, premium }) {
           backgroundColor: tab === 'home' ? vurgu : zeminRengi,
           alignItems: 'center', justifyContent: 'center',
           borderWidth: 4, borderColor: koyu ? '#12142A' : '#F7F5FF',
+          // Android'de "elevation" dairesel bir View'da bile görünmez bir
+          // dikdörtgen sınır oluşturup, arkasından kayan içeriği o kare
+          // alanda gizleyebiliyor (dairenin kendi şekli değil, kare
+          // bounding box'ı). Bu yüzden burada elevation'ı kapatıp sadece
+          // iOS'ta çalışan shadow* özellikleriyle yetiniyoruz — görsel
+          // fark neredeyse yok, ama Android'deki kesme sorunu ortadan kalkıyor.
+          elevation: 0,
         }]}>
           {ligoRes ? (
             <Image source={ligoRes} style={{ width: 44, height: 44, resizeMode: 'contain' }} />
@@ -3167,12 +3838,99 @@ function GununSorusu({ srs }) {
   );
 }
 
+// ============================================================
+// 60 SANİYELİK ISINMA
+//
+// Herhangi bir moda girmeden, Ana Sayfa'nın kendisinde cevaplanabilen
+// tek soruluk minik bir quiz. Amaç: çalışmaya başlamanın önündeki en
+// büyük engel olan "bir moda girme" adımını tamamen ortadan kaldırıp,
+// sıfır sürtünmeli bir ilk adım sunmak. Günde bir kez, doğru
+// cevaplanırsa küçük bir XP ödülü var.
+// ============================================================
+function IsinmaKart({ srs, tamamlandiMi, onTamamlandi }) {
+  const { P, DERSLER } = useTema();
+  const [secilen, setSecilen] = useState(null);
+  const kart = React.useMemo(() => isinmaSorusunuSec(srs), []);
+  const siklar = React.useMemo(() => kart ? sikleriSirala(kart.secenekler, kart.id) : [], [kart]);
+
+  if (tamamlandiMi || !kart) return null;
+  const d = DERSLER.find(x => x.id === kart.ders) || { renk: P.ink, ad: kart.ders };
+
+  const secYap = (sik) => {
+    if (secilen) return;
+    setSecilen(sik);
+    const dogruMu = sik === kart.cevap;
+    dogruMu ? titre.dogru() : titre.yanlis();
+    setTimeout(() => onTamamlandi(dogruMu), 900);
+  };
+
+  return (
+    <View style={[st_golge, {
+      borderRadius: 18, overflow: 'hidden', marginBottom: 16,
+      backgroundColor: P.yuzey, borderLeftWidth: 4, borderLeftColor: '#F59E0B', padding: 16,
+    }]}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
+        <Zap size={14} color="#F59E0B" strokeWidth={2.4} />
+        <Text style={{ fontFamily: FONT.monoBold, fontSize: 12, color: '#F59E0B', letterSpacing: 1, marginLeft: 6 }}>
+          60 SANİYELİK ISINMA · {d.ad}
+        </Text>
+      </View>
+      <Text style={{ fontFamily: FONT.govdeKalin, fontSize: 15, color: P.ink, lineHeight: 21, marginBottom: 12 }}>
+        {kart.soru}
+      </Text>
+      {siklar.map((s, i) => {
+        const dogruMu = s === kart.cevap;
+        const gosterSonuc = secilen !== null;
+        const vurgulu = gosterSonuc && (dogruMu || s === secilen);
+        const bg = gosterSonuc ? (dogruMu ? '#DCFCE7' : (s === secilen ? '#FEE2E2' : P.bgAlt)) : P.bgAlt;
+        const kenarRengi = gosterSonuc ? (dogruMu ? '#22C55E' : (s === secilen ? '#EF4444' : 'transparent')) : 'transparent';
+        // Arka plan vurgulandığında (yeşil/kırmızı pastel) sabit koyu bir
+        // metin rengi kullanılıyor — aksi halde karanlık modda P.ink
+        // (açık/beyaz) bu açık pastel zemin üzerinde görünmez oluyordu.
+        const metinRengi = vurgulu ? (dogruMu ? '#166534' : '#991B1B') : P.ink;
+        return (
+          <TouchableOpacity key={i} disabled={gosterSonuc} onPress={() => secYap(s)} activeOpacity={0.75}
+            style={{
+              backgroundColor: bg, borderRadius: 12, borderWidth: gosterSonuc ? 1.5 : 0,
+              borderColor: kenarRengi, padding: 12, marginBottom: 8,
+            }}>
+            <Text style={{ fontFamily: FONT.govde, fontSize: 13, color: metinRengi }}>{s}</Text>
+          </TouchableOpacity>
+        );
+      })}
+      {secilen && (
+        <Text style={{
+          fontFamily: FONT.govdeKalin, fontSize: 12, marginTop: 2,
+          color: secilen === kart.cevap ? '#22C55E' : '#EF4444',
+        }}>
+          {secilen === kart.cevap ? '+15 XP! Harika 🎉' : 'Doğrusu: ' + kart.cevap}
+        </Text>
+      )}
+    </View>
+  );
+}
+
 function HomeScreen({
   srs, xp, seri, bugun, hedefKart, onDersBaslat, onOncelikliKonu, sinavTarihi, profil,
   onProfil, denemeGecmisi, gunluk, gunlukDers, hesapVarMi, premium, onDenemeSekmesi, bugunYeniOgrenilenler,
+  isinmaTamamlandiMi, onIsinmaTamamlandi, seriDondurmaSayisi, davetSayisiGorulen, onDavetEt,
+  meydanOkumaTamamlandiMi, onMeydanOkumaOdulAl,
 }) {
   const { P, s: st, DERSLER, seviyeHesapla, koyu } = useTema();
+  const [davetNudgeKapandi, setDavetNudgeKapandi] = useState(false);
   const kenar = useSafeAreaInsets();
+
+  const meydanOkuma = React.useMemo(
+    () => gunlukMeydanOkumaHesapla(gunluk, gunlukDers, hedefKart),
+    [gunluk, gunlukDers, hedefKart]
+  );
+  const odulVerildiRef = useRef(false);
+  useEffect(() => {
+    if (meydanOkuma.tamamlandiMi && !meydanOkumaTamamlandiMi && !odulVerildiRef.current) {
+      odulVerildiRef.current = true;
+      onMeydanOkumaOdulAl();
+    }
+  }, [meydanOkuma.tamamlandiMi, meydanOkumaTamamlandiMi]);
 
   const bekleyen = CARDS.filter(c => (srs[c.id] || yeniD(c.id)).dueAt <= Date.now()).length;
   const yanlisSayisi = Object.values(srs).filter(d => d.sonYanlis).length;
@@ -3186,6 +3944,20 @@ function HomeScreen({
     ? Math.max(0, Math.ceil((sinavZamani - new Date().setHours(0, 0, 0, 0)) / GUN))
     : null;
 
+  // "Bu hızda gidersen" projeksiyonu: son günlerin gerçek tempsosuna
+  // bakıp, sınava kadar kalan günde bu hızla devam edilirse yaklaşık
+  // kaç kart daha çözülmüş olacağını tahmin eder. En az 3 günlük
+  // gerçek veri olmadan gösterilmez — tek günlük veriyle yapılan bir
+  // tahmin yanıltıcı/cesaret kırıcı olabilir.
+  const projeksiyon = React.useMemo(() => {
+    const degerler = Object.values(gunluk || {});
+    if (degerler.length < 3 || kalanGun === null || kalanGun <= 0) return null;
+    const ortalama = degerler.reduce((a, b) => a + b, 0) / degerler.length;
+    if (ortalama <= 0) return null;
+    const toplamTahmin = Math.round((ortalama * kalanGun) / 50) * 50; // en yakın 50'ye yuvarla
+    return toplamTahmin > 0 ? toplamTahmin : null;
+  }, [gunluk, kalanGun]);
+
   // ---- Karşılama: saate ve duruma göre ----
   const ad = React.useMemo(() => {
     const h = (profil && profil.ad ? String(profil.ad) : '').trim();
@@ -3193,14 +3965,20 @@ function HomeScreen({
     return h.charAt(0).toLocaleUpperCase('tr-TR') + h.slice(1);
   }, [profil]);
 
-  const selam = React.useMemo(() => {
-    const saat = new Date().getHours();
-    const kim = ad ? ' ' + ad : '';
-    if (saat < 6) return { yazi: 'Gece çalışması' + kim, son: 'Geç saat, kısa tut' };
-    if (saat < 12) return { yazi: 'Günaydın' + kim, son: 'Güne erken başladın' };
-    if (saat < 18) return { yazi: 'Selam' + kim, son: 'Bugünkü hedefe bakalım' };
-    return { yazi: 'İyi akşamlar' + kim, son: 'Hedefe bir adım daha' };
-  }, [ad]);
+  // Ligo'nun ağzından, o güne özel tek bir karşılama cümlesi — jenerik
+  // "Merhaba!" yerine, ruh haline (bugünkü ilerleme) ve seriye göre
+  // değişen, kişisel bir his veriyor.
+  const ligoKarsilamaSozu = React.useMemo(() => {
+    const kim = ad ? ad + ', ' : '';
+    const mood = ligoIfadesi({ bugun, hedefKart });
+    if (mood === 'kutlama') return `${kim}bugünkü hedefini tamamladın! Harikasın 🎉`;
+    if (mood === 'mutlu') return `${kim}gayet iyi gidiyorsun, yarı yoldasın!`;
+    if (mood === 'uykulu') {
+      if (seri >= 3) return `${kim}${seri} günlük serini bozma, hadi başlayalım!`;
+      return `${kim}bugün henüz başlamadın, ben seni bekliyorum!`;
+    }
+    return `${kim}iyi gidiyorsun, böyle devam!`;
+  }, [ad, bugun, hedefKart, seri]);
 
   // ---- En zayıf ünite ----
   const enZayif = React.useMemo(() => enOncelikliUnite(srs), [srs]);
@@ -3216,15 +3994,6 @@ function HomeScreen({
     const g = gunlukDers || {};
     return g[bugunTarihi()] || {};
   }, [gunlukDers]);
-
-  const ligoKartRes = ligoGorsel(ligoIfadesi({ bugun, hedefKart }));
-
-  // Ligo'nun bugünkü sözü — duruma göre seçilir, gün içinde sabit kalır
-  const ligoSozu = React.useMemo(
-    () => ligoMesaji({ bugun, hedefKart, seri, bekleyen }),
-    // bugun/hedefKart eşiği değiştikçe yenilensin, her karede değil
-    [Math.floor((bugun / Math.max(1, hedefKart)) * 4), bugun === 0, seri > 0]
-  );
 
   const dokunulanDersler = React.useMemo(() => (
     DERSLER
@@ -3243,84 +4012,18 @@ function HomeScreen({
       )}
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 18, paddingTop: kenar.top + 14, paddingBottom: 30 }}>
 
-      {/* ================= HEADER BANNER ================= */}
-      <View style={[st.golge, { borderRadius: 24, marginBottom: 16, overflow: 'hidden' }]}>
+      {/* ================= LIGO KARŞILAMA HEROSU ================= */}
+      {/* Eskiden burada iki ayrı kart vardı: bir "Selam Ahmet" karşılama
+          bandı + ayrı bir avatar halkası, ve altında ayrı bir halka/geri
+          sayım/seri kartı — iki rakip yuvarlak öge, kalabalık ve soğuk
+          hissettiriyordu. Şimdi hepsi TEK bir bütün: Ligo'nun kendisi
+          ana kahraman, etrafındaki bilgiler sessiz rozetler, ve net
+          TEK bir aksiyon butonu. */}
+      <View style={[st.golge, { borderRadius: 28, marginBottom: 14, overflow: 'hidden' }]}>
         <LinearGradient
-          colors={koyu ? ['#232852', '#171A32'] : ['#EEF1FF', '#DDE3FA']}
+          colors={koyu ? ['#2B2145', '#20193B', '#171227'] : ['#FFF4EA', '#FFF9F2', '#FFEFE3']}
           start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-          style={{ padding: 18 }}>
-
-          {/* Arka plan süsü: seviye renginde yumuşak halkalar */}
-          <View pointerEvents="none" style={{
-            position: 'absolute', right: -46, top: -46,
-            width: 168, height: 168, borderRadius: 84,
-            borderWidth: 28, borderColor: sev.renk + (koyu ? '14' : '10'),
-          }} />
-          <View pointerEvents="none" style={{
-            position: 'absolute', right: 22, bottom: -58,
-            width: 108, height: 108, borderRadius: 54,
-            borderWidth: 18, borderColor: P.neon + (koyu ? '10' : '0D'),
-          }} />
-
-          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <View style={{ flex: 1, paddingRight: 12 }}>
-              <Text style={{ fontFamily: FONT.govdeKalin, fontSize: 15, color: P.inkSoft }}>
-                {selam.yazi} <Text style={{ fontSize: 14 }}>🚀</Text>
-              </Text>
-              <Text style={{
-                fontFamily: FONT.baslik, fontSize: 21, color: P.ink,
-                letterSpacing: 0.3, marginTop: 2, lineHeight: 27,
-              }}>
-                {selam.son.toLocaleUpperCase('tr-TR')}
-              </Text>
-
-              {/* Rütbe rozeti */}
-              <View style={{
-                flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start',
-                backgroundColor: sev.renk + '24',
-                borderWidth: 1, borderColor: sev.renk + '55',
-                borderRadius: 999, paddingHorizontal: 11, paddingVertical: 5,
-                marginTop: 11,
-              }}>
-                <SeviyeIkon size={14} color={sev.renk} strokeWidth={2.8} />
-                <Text style={{
-                  fontFamily: FONT.monoBold, fontSize: 12, color: sev.renk,
-                  marginLeft: 6, letterSpacing: 0.6,
-                }}>{sev.ad.toLocaleUpperCase('tr-TR')}</Text>
-              </View>
-            </View>
-
-            {/* Avatar + seviye halkası */}
-            <TouchableOpacity activeOpacity={0.8} onPress={() => { titre.hafif(); onProfil && onProfil(); }}>
-              <Halka pct={sev.pct} boyut={68} kalinlik={4} renk={sev.renk} zemin={koyu ? 'rgba(255,255,255,0.10)' : 'rgba(16,18,26,0.08)'}>
-                <View style={{
-                  width: 52, height: 52, borderRadius: 26,
-                  backgroundColor: sev.renk + '2E',
-                  alignItems: 'center', justifyContent: 'center',
-                }}>
-                  {ad
-                    ? <Text style={{ fontFamily: FONT.baslik, fontSize: 24, color: sev.renk }}>{ad.charAt(0)}</Text>
-                    : <SeviyeIkon size={26} color={sev.renk} strokeWidth={2.6} />}
-                </View>
-              </Halka>
-              <Text style={{
-                fontFamily: FONT.monoBold, fontSize: 11, color: P.inkFaint,
-                textAlign: 'center', marginTop: 5,
-              }}>%{sev.pct}</Text>
-            </TouchableOpacity>
-          </View>
-        </LinearGradient>
-      </View>
-
-      {/* ================= BUGÜN — BENTO GRID HERO ================= */}
-      {/* Tek tip üst üste dizilmiş kartlar yerine: halka solda büyük bir
-          odak noktası, geri sayım ve seri sağda iki küçük dikey widget
-          olarak yan yana duruyor — asimetrik, "bento kutusu" düzeni. */}
-      <View style={[st.golge, { borderRadius: 24, marginBottom: 14, overflow: 'hidden' }]}>
-        <LinearGradient
-          colors={koyu ? ['#1B2145', '#241C3E', '#171A32'] : ['#EFF1FF', '#F6F0FF', '#FFF6F0']}
-          start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-          style={{ paddingVertical: 22, paddingHorizontal: 18 }}>
+          style={{ paddingVertical: 24, paddingHorizontal: 20, alignItems: 'center' }}>
 
           {/* Yumuşak ışık halkaları — arka planda derinlik */}
           <View pointerEvents="none" style={{
@@ -3334,97 +4037,179 @@ function HomeScreen({
             backgroundColor: P.mor + (koyu ? '10' : '0A'),
           }} />
 
-          {/* BENTO SIRASI: sol büyük halka, sağ iki dikey widget */}
-          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <GunlukHalka
-              dersDagilim={bugunDersler}
-              hedef={hedefKart}
-              toplam={bugun}
-              boyut={148}
-              kalinlik={14}
-              premium={premium}
-              seviyeAdi={sev.ad}
-            />
+          {/* Rütbe rozeti — sağ üstte, sessiz, profile dokunuşla gidiliyor */}
+          <TouchableOpacity onPress={() => { titre.hafif(); onProfil && onProfil(); }} activeOpacity={0.8}
+            style={{
+              position: 'absolute', top: 16, right: 16, flexDirection: 'row', alignItems: 'center',
+              backgroundColor: sev.renk + '24', borderWidth: 1, borderColor: sev.renk + '55',
+              borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5,
+            }}>
+            <SeviyeIkon size={13} color={sev.renk} strokeWidth={2.8} />
+            <Text style={{ fontFamily: FONT.monoBold, fontSize: 11, color: sev.renk, marginLeft: 5, letterSpacing: 0.4 }}>
+              {sev.ad.toLocaleUpperCase('tr-TR')}
+            </Text>
+          </TouchableOpacity>
 
-            <View style={{ flex: 1, marginLeft: 16 }}>
-              {kalanGun !== null && (
-                <View style={{
-                  backgroundColor: koyu ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.6)',
-                  borderRadius: 16, padding: 13, marginBottom: 10,
-                }}>
-                  <Text style={{ fontFamily: FONT.govdeKalin, fontSize: 10, color: P.inkFaint, letterSpacing: 1 }}>
-                    LGS'YE KALAN
+          {/* Ligo, büyük ve merkezi — halka onun etrafında ince bir çerçeve.
+              Sallama etkileşimi GunlukHalka içinde zaten var, korunuyor. */}
+          <GunlukHalka
+            dersDagilim={bugunDersler}
+            hedef={hedefKart}
+            toplam={bugun}
+            boyut={172}
+            kalinlik={11}
+            premium={premium}
+            seviyeAdi={sev.ad}
+          />
+
+          {/* Ligo'nun ağzından, o güne özel tek bir cümle — jenerik
+              "Merhaba!" yerine duruma göre değişen kişisel bir karşılama */}
+          <Text style={{
+            fontFamily: FONT.baslik, fontSize: 19, color: P.ink, textAlign: 'center',
+            marginTop: 16, lineHeight: 25, paddingHorizontal: 6,
+          }}>
+            {ligoKarsilamaSozu}
+          </Text>
+
+          {/* Seri + geri sayım — küçük, sessiz rozetler; kutu içinde kutu değil */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 14, flexWrap: 'wrap', justifyContent: 'center' }}>
+            {kalanGun !== null && (
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 16, marginBottom: 4 }}>
+                <CalendarClock size={13} color={P.inkFaint} strokeWidth={2.4} />
+                <Text style={{ fontFamily: FONT.govdeKalin, fontSize: 12, color: P.inkFaint, marginLeft: 4 }}>
+                  {kalanGun} gün kaldı
+                </Text>
+              </View>
+            )}
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
+              <SeriAlevi seri={seri} />
+              <Text style={{ fontFamily: FONT.govdeKalin, fontSize: 12, color: P.inkFaint, marginLeft: 4 }}>
+                {seri} gün seri
+              </Text>
+              {seriDondurmaSayisi > 0 && (
+                <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 8 }}>
+                  <Snowflake size={11} color="#3B82F6" strokeWidth={2.4} />
+                  <Text style={{ fontFamily: FONT.govdeKalin, fontSize: 11, color: '#3B82F6', marginLeft: 2 }}>
+                    {seriDondurmaSayisi}
                   </Text>
-                  <View style={{ flexDirection: 'row', alignItems: 'baseline', marginTop: 2 }}>
-                    <Text style={{ fontFamily: FONT.baslik, fontSize: 26, color: P.ink }}>{kalanGun}</Text>
-                    <Text style={{ fontFamily: FONT.govde, fontSize: 12, color: P.inkFaint, marginLeft: 4 }}>gün</Text>
-                  </View>
                 </View>
               )}
-
-              <View style={{
-                flexDirection: 'row', alignItems: 'center',
-                backgroundColor: seriKademesi(seri).parlamaZemin,
-                borderWidth: 1, borderColor: seriKademesi(seri).parlamaKenar,
-                borderRadius: 16, padding: 13,
-              }}>
-                <SeriAlevi seri={seri} />
-                <View style={{ marginLeft: 9 }}>
-                  <Text style={{ fontFamily: FONT.baslik, fontSize: 20, color: seriKademesi(seri).metin, lineHeight: 22 }}>
-                    {seri}
-                  </Text>
-                  <Text style={{ fontFamily: FONT.govdeKalin, fontSize: 10, color: seriKademesi(seri).metin, letterSpacing: 0.6 }}>
-                    GÜN SERİ
-                  </Text>
-                </View>
-              </View>
             </View>
           </View>
 
-        {/* Ligo'nun günün sözü — ayrı bir kart değil, halkanın içinde küçük bir konuşma satırı */}
-        <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 18, paddingHorizontal: 4 }}>
-          {ligoKartRes
-            ? <Image source={ligoKartRes} style={{ width: 22, height: 22, resizeMode: 'contain', marginRight: 8 }} />
-            : <Sparkles size={16} color={P.neon} strokeWidth={2.4} style={{ marginRight: 8 }} />}
-          <Text style={{ flex: 1, fontFamily: FONT.govde, fontSize: 13, color: P.inkSoft, fontStyle: 'italic' }} numberOfLines={2}>
-            {ligoSozu}
-          </Text>
-        </View>
+          {projeksiyon && (
+            <Text style={{ fontFamily: FONT.govde, fontSize: 11, color: P.inkFaint, marginTop: 4, textAlign: 'center' }}>
+              Bu hızda gidersen ~{projeksiyon >= 1000 ? (projeksiyon / 1000).toFixed(1).replace('.0', '') + ' bin' : projeksiyon} soru daha çözmüş olursun
+            </Text>
+          )}
 
-        {/* Bugün dokunulan dersler */}
-        <Text style={{
-          fontFamily: FONT.govde, fontSize: 12, color: P.inkFaint,
-          marginTop: 10, marginBottom: dokunulanDersler.length > 0 ? 0 : 4,
-          textAlign: 'center',
-        }}>
-          📳 Telefonu salla, Ligo tepki versin
-        </Text>
-
-        {dokunulanDersler.length > 0 ? (
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', marginTop: 18 }}>
-            {dokunulanDersler.map(d => (
-              <View key={d.id} style={{
-                flexDirection: 'row', alignItems: 'center',
-                backgroundColor: d.renk + '22',
-                borderRadius: 999, paddingHorizontal: 11, paddingVertical: 6,
-                marginRight: 7, marginBottom: 7,
-              }}>
-                <View style={{ width: 9, height: 9, borderRadius: 5, backgroundColor: d.renk, marginRight: 7 }} />
-                <Text style={{ fontFamily: FONT.govdeKalin, fontSize: 13, color: P.ink }}>{d.ad}</Text>
-                <Text style={{ fontFamily: FONT.monoBold, fontSize: 13, color: d.renk, marginLeft: 6 }}>{d.sayi}</Text>
-              </View>
-            ))}
+          {/* Tek net aksiyon — çoktan seçmeli kutucuklar yerine tek buton */}
+          <View style={{ width: '100%', marginTop: 18 }}>
+            <Dugme etiket="BUGÜN BAŞLA" Ikon={Zap} renk="#FF6B35" renkKoyu="#D8481D" tam
+              onPress={() => {
+                titre.orta();
+                if (enZayif && zayifDers) onOncelikliKonu(enZayif.ders, enZayif.unite);
+                else if (DERSLER[0]) onDersBaslat(DERSLER[0].id);
+              }} />
           </View>
-        ) : (
-          <Text style={{
-            fontFamily: FONT.govde, fontSize: 15, color: P.inkSoft,
-            marginTop: 16, textAlign: 'center', lineHeight: 22,
-          }}>
-            Bugün henüz başlamadın.{'\n'}Çalıştıkça halka dersin rengiyle dolacak.
-          </Text>
-        )}
+
+          {dokunulanDersler.length > 0 && (
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', marginTop: 16 }}>
+              {dokunulanDersler.map(d => (
+                <View key={d.id} style={{
+                  flexDirection: 'row', alignItems: 'center',
+                  backgroundColor: d.renk + '22',
+                  borderRadius: 999, paddingHorizontal: 11, paddingVertical: 6,
+                  marginRight: 7, marginBottom: 7,
+                }}>
+                  <View style={{ width: 9, height: 9, borderRadius: 5, backgroundColor: d.renk, marginRight: 7 }} />
+                  <Text style={{ fontFamily: FONT.govdeKalin, fontSize: 13, color: P.ink }}>{d.ad}</Text>
+                  <Text style={{ fontFamily: FONT.monoBold, fontSize: 13, color: d.renk, marginLeft: 6 }}>{d.sayi}</Text>
+                </View>
+              ))}
+            </View>
+          )}
         </LinearGradient>
       </View>
+
+
+      {haftaSonuMu() && (
+        <View style={{
+          flexDirection: 'row', alignItems: 'center', backgroundColor: '#F59E0B1E',
+          borderWidth: 1, borderColor: '#F59E0B40', borderRadius: 14, padding: 12, marginBottom: 16,
+        }}>
+          <Gift size={18} color="#F59E0B" strokeWidth={2.4} />
+          <Text style={{ fontFamily: FONT.govdeKalin, fontSize: 13, color: '#F59E0B', marginLeft: 8 }}>
+            Hafta Sonu Bonusu Aktif — Kart çözerken kazandığın XP 2 katı! 🎉
+          </Text>
+        </View>
+      )}
+
+      {/* Davet hatırlatması — Duolingo'nun "Mini Add Friend Nudge"undan
+          esinlenildi: zorlamadan, sadece bir kez, hiç davet göndermemiş
+          ve zaten bir miktar bağlanmış (3+ gün seri) kullanıcılara. */}
+      {!premium && davetSayisiGorulen === 0 && seri >= 3 && !davetNudgeKapandi && (
+        <TouchableOpacity onPress={() => { titre.hafif(); onDavetEt && onDavetEt(); }} activeOpacity={0.85}
+          style={{
+            flexDirection: 'row', alignItems: 'center', backgroundColor: '#8B5CF61E',
+            borderWidth: 1, borderColor: '#8B5CF640', borderRadius: 14, padding: 12, marginBottom: 16,
+          }}>
+          <Users size={18} color="#8B5CF6" strokeWidth={2.4} />
+          <Text style={{ fontFamily: FONT.govdeKalin, fontSize: 13, color: '#8B5CF6', marginLeft: 8, flex: 1 }}>
+            İlk arkadaşını davet et, ikiniz de +50 XP ve bonus deneme kazanın
+          </Text>
+          <TouchableOpacity onPress={(e) => { e.stopPropagation(); setDavetNudgeKapandi(true); }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+            <XIkon size={16} color="#8B5CF6" strokeWidth={2.4} />
+          </TouchableOpacity>
+        </TouchableOpacity>
+      )}
+
+      <IsinmaKart srs={srs} tamamlandiMi={isinmaTamamlandiMi} onTamamlandi={onIsinmaTamamlandi} />
+
+      {/* Günlük Meydan Okuma — her gün değişen, rutini kıran küçük bir
+          hedef. Duolingo'nun "Daily Quest"inden esinlenildi. İlerleme
+          zaten toplanan günlük veriden hesaplanıyor, ekstra bir eylem
+          gerektirmiyor — normal çalışmanın kendisi ilerletiyor. */}
+      {(() => {
+        const MEYDAN_IKON = { Layers, Zap, Target };
+        const MIkon = MEYDAN_IKON[meydanOkuma.ikonAdi] || Zap;
+        const tamamMi = meydanOkuma.tamamlandiMi;
+        return (
+          <View style={{
+            backgroundColor: tamamMi ? '#27AE6018' : P.bgAlt, borderRadius: 16, padding: 14, marginBottom: 16,
+            borderWidth: 1.5, borderColor: tamamMi ? '#27AE6050' : 'transparent',
+          }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <View style={{
+                width: 34, height: 34, borderRadius: 12, alignItems: 'center', justifyContent: 'center',
+                backgroundColor: tamamMi ? '#27AE6030' : '#8B5CF622', marginRight: 10,
+              }}>
+                {tamamMi
+                  ? <CircleCheckBig size={18} color="#27AE60" strokeWidth={2.4} />
+                  : <MIkon size={17} color="#8B5CF6" strokeWidth={2.4} />}
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontFamily: FONT.monoBold, fontSize: 10, color: tamamMi ? '#27AE60' : '#8B5CF6', letterSpacing: 0.5 }}>
+                  GÜNÜN MEYDAN OKUMASI
+                </Text>
+                <Text style={{ fontFamily: FONT.govdeKalin, fontSize: 13, color: P.ink, marginTop: 1 }}>
+                  {tamamMi ? 'Tamamlandı! +40 XP kazandın' : meydanOkuma.baslik(meydanOkuma.hedef)}
+                </Text>
+              </View>
+              {!tamamMi && (
+                <Text style={{ fontFamily: FONT.mono, fontSize: 12, color: P.inkFaint }}>
+                  {meydanOkuma.ilerleme}/{meydanOkuma.hedef}
+                </Text>
+              )}
+            </View>
+            {!tamamMi && (
+              <View style={{ height: 5, backgroundColor: P.bg, borderRadius: 999, marginTop: 10, overflow: 'hidden' }}>
+                <View style={{ height: '100%', width: `${meydanOkuma.yuzde}%`, backgroundColor: '#8B5CF6', borderRadius: 999 }} />
+              </View>
+            )}
+          </View>
+        );
+      })()}
 
       <GununSorusu srs={srs} />
 
@@ -3486,7 +4271,7 @@ function HomeScreen({
           const AksiyonIkon = a.Ikon;
           return (
             <View key={a.id} style={[st.golge, {
-              flex: 1, marginRight: i === 0 ? 12 : 0,
+              flex: 1, marginRight: i < 2 ? 12 : 0,
               borderRadius: 20, overflow: 'hidden', opacity: a.pasif ? 0.45 : 1,
             }]}>
               <TouchableOpacity activeOpacity={0.88} disabled={a.pasif}
@@ -3610,7 +4395,7 @@ function DavetEtEkrani({ profil, hesapVarMi, davetSayisiGorulen, onDavetKullanil
           {profil.rumuz}
         </Text>
         <Text style={{ fontFamily: FONT.govde, fontSize: 13, color: '#FFFFFFB0', marginTop: 8, textAlign: 'center' }}>
-          {davetSayisiGorulen > 0 ? `${davetSayisiGorulen} arkadaşını davet ettin, +${davetSayisiGorulen * 50} XP kazandın` : 'Bir arkadaşın kaydolurken bu kodu girince ikiniz de +50 XP kazanır'}
+          {davetSayisiGorulen > 0 ? `${davetSayisiGorulen} arkadaşını davet ettin, +${davetSayisiGorulen * 50} XP ve ${davetSayisiGorulen} bonus deneme hakkı kazandın` : 'Bir arkadaşın kaydolurken bu kodu girince ikiniz de +50 XP ve bir bonus deneme hakkı kazanır'}
         </Text>
         <View style={{ marginTop: 16, width: '100%' }}>
           <Dugme etiket="ARKADAŞINI DAVET ET" Ikon={Share2} renk="#FFFFFF" renkKoyu="#EEEEEE" tam onPress={paylas}
@@ -3735,9 +4520,7 @@ function HakkindaEkrani() {
   return (
     <ScrollView contentContainerStyle={{ padding: 20, paddingTop: 16, paddingBottom: 28 }}>
       <View style={{ alignItems: 'center', marginBottom: 24 }}>
-        {ligoGorsel('normal') && (
-          <Image source={ligoGorsel('normal')} style={{ width: 72, height: 72, resizeMode: 'contain', marginBottom: 10 }} />
-        )}
+        <LigoBosDurum boyut={72} marginBottom={10} />
         <Text style={{ fontFamily: FONT.baslik, fontSize: 20, color: P.ink }}>Ligo LGS Cepte</Text>
         <Text style={{ fontFamily: FONT.mono, fontSize: 13, color: P.inkFaint, marginTop: 4 }}>
           Sürüm {UYGULAMA_SURUMU}
@@ -4115,10 +4898,12 @@ function DenemeSonucAnalizi({ sonuc, onIkinciSans, onDon, premium, onPremiumAc, 
   );
 }
 
-function DenemeEkrani({ srs, denemeGecmisi, premium, onBaslat, onNetHesaplayici }) {
+function DenemeEkrani({ srs, denemeGecmisi, premium, onBaslat, onNetHesaplayici, bonusDenemeHakki, onReklamOduluKazanildi }) {
   const { P, s: st, DERSLER, koyu } = useTema();
   const kenar = useSafeAreaInsets();
   const [secim, setSecim] = useState(null); // null = Genel Deneme, yoksa dersId
+  const [reklamYukleniyor, setReklamYukleniyor] = useState(false);
+  const [reklamHata, setReklamHata] = useState('');
 
   const kalanHak = premium ? null : Math.max(0, 1 - buHaftaDenemeSayisi(denemeGecmisi));
   const genelSecili = !secim;
@@ -4153,7 +4938,7 @@ function DenemeEkrani({ srs, denemeGecmisi, premium, onBaslat, onNetHesaplayici 
           <View style={{
             flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start',
             backgroundColor: kalanHak > 0 ? P.bgAlt : '#E5342522',
-            borderRadius: 999, paddingHorizontal: 13, paddingVertical: 7, marginBottom: 18,
+            borderRadius: 999, paddingHorizontal: 13, paddingVertical: 7, marginBottom: bonusDenemeHakki > 0 ? 8 : 18,
           }}>
             <Sparkles size={13} color={kalanHak > 0 ? P.inkFaint : '#E53425'} strokeWidth={2.2} />
             <Text style={{
@@ -4163,6 +4948,50 @@ function DenemeEkrani({ srs, denemeGecmisi, premium, onBaslat, onNetHesaplayici 
             </Text>
           </View>
         )}
+
+        {!premium && bonusDenemeHakki > 0 && (
+          <View style={{
+            flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start',
+            backgroundColor: '#8B5CF622', borderRadius: 999, paddingHorizontal: 13, paddingVertical: 7, marginBottom: 18,
+          }}>
+            <Users size={13} color="#8B5CF6" strokeWidth={2.2} />
+            <Text style={{ fontSize: 12, color: '#8B5CF6', fontFamily: FONT.monoBold, marginLeft: 6 }}>
+              +{bonusDenemeHakki} davet bonusu deneme hakkın var
+            </Text>
+          </View>
+        )}
+
+        {/* Haftalık ve bonus hak da bitmişse, kullanıcı isteyerek bir
+            reklam izleyip +1 deneme hakkı kazanabilir — zorunlu değil,
+            tamamen kendi tercihi. Premium'a hiç gösterilmez. */}
+        {!premium && kalanHak <= 0 && bonusDenemeHakki <= 0 && (
+          <TouchableOpacity
+            disabled={reklamYukleniyor}
+            onPress={() => {
+              titre.hafif();
+              setReklamHata('');
+              setReklamYukleniyor(true);
+              odulluReklamGoster(
+                () => { setReklamYukleniyor(false); titre.dogru(); onReklamOduluKazanildi(); },
+                () => { setReklamYukleniyor(false); setReklamHata('Reklam şu an yüklenemedi, birazdan tekrar dene.'); }
+              );
+            }}
+            style={{
+              flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start',
+              backgroundColor: '#F59E0B22', borderRadius: 999, paddingHorizontal: 13, paddingVertical: 8,
+              marginBottom: 8, opacity: reklamYukleniyor ? 0.6 : 1,
+            }}>
+            {reklamYukleniyor
+              ? <ActivityIndicator size="small" color="#F59E0B" />
+              : <PlayCircle size={15} color="#F59E0B" strokeWidth={2.2} />}
+            <Text style={{ fontSize: 13, color: '#F59E0B', fontFamily: FONT.monoBold, marginLeft: 7 }}>
+              {reklamYukleniyor ? 'Reklam yükleniyor...' : 'Reklam izle, +1 deneme hakkı kazan'}
+            </Text>
+          </TouchableOpacity>
+        )}
+        {reklamHata ? (
+          <Text style={{ fontFamily: FONT.govde, fontSize: 12, color: P.red, marginBottom: 10 }}>{reklamHata}</Text>
+        ) : null}
 
         {/* ---------- GENEL DENEME — öne çıkan büyük kart ---------- */}
         <TouchableOpacity onPress={() => { titre.orta(); setSecim(null); }} activeOpacity={0.88}
@@ -4612,6 +5441,45 @@ function KonuCalisma({ kartlar, onBitti }) {
   const idxRef = useRef(0);
   useEffect(() => { idxRef.current = idx; }, [idx]);
 
+  // Kaydırma öğreticisi — CapWords'ün "Swipe Cards Gesture Tip"
+  // deseninden esinlenildi: kullanıcı bu ekrana İLK KEZ girdiğinde,
+  // bir el ikonu sağa doğru kayıp soluyor, "Kaydır" yazısıyla birlikte.
+  // Sadece bir kez gösterilir, bir daha hiç çıkmaz.
+  const [ipucuGoster, setIpucuGoster] = useState(false);
+  const ipucuKonum = useRef(new Animated.Value(0)).current;
+  const ipucuOpak = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const gorundu = await AsyncStorage.getItem('lgs_kaydirma_ipucu_gorundu');
+        if (!gorundu) setIpucuGoster(true);
+      } catch (e) {}
+    })();
+  }, []);
+
+  const ipucuKapat = () => {
+    setIpucuGoster(false);
+    AsyncStorage.setItem('lgs_kaydirma_ipucu_gorundu', '1').catch(() => {});
+  };
+
+  useEffect(() => {
+    if (!ipucuGoster) return;
+    Animated.timing(ipucuOpak, { toValue: 1, duration: 200, useNativeDriver: true }).start();
+    const dongu = Animated.loop(
+      Animated.sequence([
+        Animated.timing(ipucuKonum, { toValue: 46, duration: 700, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+        Animated.timing(ipucuKonum, { toValue: 0, duration: 0, useNativeDriver: true }),
+        Animated.delay(300),
+      ]),
+      { iterations: 3 }
+    );
+    dongu.start(() => ipucuKapat());
+    // 4 saniye içinde kendiliğinden kapanır — kullanıcı beklemek zorunda kalmaz
+    const zamanlayici = setTimeout(ipucuKapat, 4000);
+    return () => { dongu.stop(); clearTimeout(zamanlayici); };
+  }, [ipucuGoster]);
+
   // Her yeni karta geçince çevirme sıfırlanır — kart tekrar soru
   // tarafıyla karşılar, cevabı görmek için yine dokunman gerekir.
   useEffect(() => {
@@ -4651,8 +5519,15 @@ function KonuCalisma({ kartlar, onBitti }) {
   // Matematik yeşilimsi vb. Böylece okuma modu da ders rengiyle konuşur.
   const dersRenk = (DERSLER.find(d => d.id === kart?.ders) || {}).renk || FOCUS.blue;
 
+  // yon: 1 = ileri (sağa kaydır, kart sağa uçar), -1 = geri (sola
+  // kaydır, kart sola uçar). Önceden her iki yön de sadece "ileri"
+  // gidiyordu — renkli ipucu rozetleri (sağ=yeşil onay, sol=turuncu
+  // geç) anlamlı bir ayrım varmış hissi veriyordu ama gerçekte hiçbir
+  // fark yaratmıyordu. Artık sola kaydırmak gerçekten bir önceki
+  // karta dönüyor, tıpkı üstteki geri okunun yaptığı gibi.
   const gec = (yon) => {
-    if (idxRef.current >= kartlar.length) return;
+    if (yon === 1 && idxRef.current >= kartlar.length) return sicaGeriDon();
+    if (yon === -1 && idxRef.current === 0) return sicaGeriDon();
     titre.hafif();
     sesCal('kartcevir');
     Animated.timing(kaydir, {
@@ -4662,8 +5537,14 @@ function KonuCalisma({ kartlar, onBitti }) {
       useNativeDriver: true,
     }).start(() => {
       kaydir.setValue({ x: 0, y: 0 });
-      setIdx(i => i + 1);
+      setIdx(i => (yon === 1 ? i + 1 : Math.max(0, i - 1)));
     });
+  };
+
+  // Sınırda (ilk kart / son kart) kaydırma denenirse kart nazikçe
+  // yerine geri döner — "burada daha ileri/geri gidemezsin" hissi.
+  const sicaGeriDon = () => {
+    Animated.spring(kaydir, { toValue: { x: 0, y: 0 }, useNativeDriver: true, bounciness: 8 }).start();
   };
 
   const geriGel = () => {
@@ -4685,11 +5566,29 @@ function KonuCalisma({ kartlar, onBitti }) {
     },
   })).current;
 
-  const donus = kaydir.x.interpolate({
-    inputRange: [-SW, 0, SW], outputRange: ['-7deg', '0deg', '7deg'],
+  // 3D perspektif eğilme — düz "rotate" yerine gerçek "rotateY" ile,
+  // kart parmağın gittiği yöne doğru gerçekten arkaya yaslanıyormuş
+  // hissi veriyor (Tinder/Airbnb'nin 3D kart fiziğine yakın).
+  const donus3D = kaydir.x.interpolate({
+    inputRange: [-SW, 0, SW], outputRange: ['18deg', '0deg', '-18deg'],
   });
   const opak = kaydir.x.interpolate({
     inputRange: [-SW * 0.7, 0, SW * 0.7], outputRange: [0.25, 1, 0.25], extrapolate: 'clamp',
+  });
+  // Kaydırma ipucu rozetleri — sadece görsel, hiçbir veri yazmıyor
+  const sagIpucuOpak = kaydir.x.interpolate({
+    inputRange: [0, SW * 0.18, SW * 0.45], outputRange: [0, 0.4, 1], extrapolate: 'clamp',
+  });
+  const solIpucuOpak = kaydir.x.interpolate({
+    inputRange: [-SW * 0.45, -SW * 0.18, 0], outputRange: [1, 0.4, 0], extrapolate: 'clamp',
+  });
+  // Çevirme sırasında geçen ince ışık şeridi — sadece dönüşün orta
+  // kısmında (kartın "kenara" en yakın olduğu an) belirip kayboluyor.
+  const parlamaOpak = cevrim.interpolate({
+    inputRange: [0, 0.35, 0.5, 0.65, 1], outputRange: [0, 0.9, 1, 0.9, 0],
+  });
+  const parlamaKonum = cevrim.interpolate({
+    inputRange: [0, 1], outputRange: [-40, SW],
   });
 
   // ---- TUR BİTTİ ----
@@ -4762,6 +5661,27 @@ function KonuCalisma({ kartlar, onBitti }) {
       {/* Kart alanı */}
       <View style={{ flex: 1, padding: 18, justifyContent: 'center' }}>
 
+        {/* Kaydırma öğreticisi — sadece ilk girişte, bir kez */}
+        {ipucuGoster && (
+          <TouchableOpacity
+            onPress={ipucuKapat} activeOpacity={1}
+            style={{
+              position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, zIndex: 20,
+              alignItems: 'center', justifyContent: 'center',
+              backgroundColor: 'rgba(8,10,16,0.35)', borderRadius: 26,
+            }}>
+            <Animated.View style={{ alignItems: 'center', opacity: ipucuOpak }}>
+              <Animated.View style={{ transform: [{ translateX: ipucuKonum }] }}>
+                <Hand size={40} color="#FFFFFF" strokeWidth={2} />
+              </Animated.View>
+              <Text style={{
+                fontFamily: FONT.monoBold, fontSize: 13, color: '#FFFFFF',
+                letterSpacing: 1, marginTop: 10,
+              }}>KAYDIR</Text>
+            </Animated.View>
+          </TouchableOpacity>
+        )}
+
         {/* Arkadaki deste */}
         {kalan > 1 && (
           <View style={{ position: 'absolute', left: 18, right: 18, top: 18, bottom: 18 }} pointerEvents="none">
@@ -4786,12 +5706,49 @@ function KonuCalisma({ kartlar, onBitti }) {
             flex: 1,
             opacity: opak,
             transform: [
+              { perspective: 1200 },
               { translateX: kaydir.x },
               { translateY: kaydir.y },
-              { rotate: donus },
+              { rotateY: donus3D },
             ],
           }}>
+          {/* Kaydırma ipucu rozetleri — TAMAMEN kozmetik, hiçbir veri
+              kaydetmiyor, SRS'e dokunmuyor. Sadece "bu yöne kaydırıyorum"
+              hissini renkle güçlendiriyor. Sağa = yeşil onay hissi,
+              sola = nötr/turuncu "geç" hissi. */}
+          <Animated.View pointerEvents="none" style={{
+            position: 'absolute', top: 18, right: 18, zIndex: 5,
+            opacity: sagIpucuOpak, transform: [{ scale: sagIpucuOpak }],
+          }}>
+            <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#27AE60', alignItems: 'center', justifyContent: 'center' }}>
+              <Check size={22} color="#FFFFFF" strokeWidth={3} />
+            </View>
+          </Animated.View>
+          <Animated.View pointerEvents="none" style={{
+            position: 'absolute', top: 18, left: 18, zIndex: 5,
+            opacity: solIpucuOpak, transform: [{ scale: solIpucuOpak }],
+          }}>
+            <View style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#F59E0B', alignItems: 'center', justifyContent: 'center' }}>
+              <ChevronLeft size={22} color="#FFFFFF" strokeWidth={3} />
+            </View>
+          </Animated.View>
+
           <TouchableOpacity activeOpacity={0.96} onPress={kartiCevir} style={{ flex: 1 }}>
+
+            {/* Çevirme sırasında geçen hafif parlama — Airbnb'nin
+                holografik kart tarzından esinlenildi. Diyagonal, ince
+                bir ışık şeridi kartın üzerinden süzülüyor. */}
+            <Animated.View pointerEvents="none" style={{
+              position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+              borderRadius: 26, overflow: 'hidden', zIndex: 4,
+              opacity: parlamaOpak,
+            }}>
+              <Animated.View style={{
+                position: 'absolute', top: -40, bottom: -40, width: 70,
+                backgroundColor: 'rgba(255,255,255,0.18)',
+                transform: [{ rotate: '20deg' }, { translateX: parlamaKonum }],
+              }} />
+            </Animated.View>
 
             {/* ÖN YÜZ — sadece soru, dokununca çevrilir */}
             <Animated.View
@@ -4910,14 +5867,89 @@ function KonuCalisma({ kartlar, onBitti }) {
 }
 
 
+// Mükemmel oturum (%100 doğruluk) anında Ligo'nun coşkulu tepkisi —
+// Brilliant/Koji'nin "Perfect Score" anından esinlenildi. Konfetiyle
+// birlikte, sonuç ekranının en üstünde belirip zıplıyor.
+// Sınav Simülasyonu sırasında büyüyen bitki — Forest uygulamasının
+// "odaklanma = büyüme" metaforundan esinlenildi. Doğru cevap oranı
+// arttıkça bitki sürekli büyüyor; belli bir eşiği geçince tam bir
+// ağaca dönüşüyor. Odaklanmayı somut, görsel bir şeye çeviriyor.
+function SinavBitkisi({ oran }) {
+  const boyutAnim = useRef(new Animated.Value(16)).current;
+  const buyukAgacMi = oran >= 0.7;
+
+  useEffect(() => {
+    const hedefBoyut = 16 + Math.min(1, oran) * 26; // 16 → 42 arası büyür
+    Animated.spring(boyutAnim, { toValue: hedefBoyut, useNativeDriver: false, friction: 6, tension: 60 }).start();
+  }, [oran]);
+
+  return (
+    <Animated.View style={{ width: boyutAnim, height: boyutAnim, alignItems: 'center', justifyContent: 'center' }}>
+      {buyukAgacMi
+        ? <TreeDeciduous size={26} color="#27AE60" strokeWidth={2.2} />
+        : <Sprout size={18} color="#27AE60" strokeWidth={2.4} />}
+    </Animated.View>
+  );
+}
+
+function MukemmelOturumLigo() {
+  const olcek = useRef(new Animated.Value(0.4)).current;
+  const donus = useRef(new Animated.Value(-8)).current;
+
+  useEffect(() => {
+    titre.dogru();
+    Animated.sequence([
+      Animated.spring(olcek, { toValue: 1.15, useNativeDriver: true, friction: 4, tension: 140 }),
+      Animated.spring(olcek, { toValue: 1, useNativeDriver: true, friction: 5, tension: 160 }),
+    ]).start();
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(donus, { toValue: 8, duration: 260, useNativeDriver: true }),
+        Animated.timing(donus, { toValue: -8, duration: 260, useNativeDriver: true }),
+      ]),
+      { iterations: 3 }
+    ).start();
+  }, []);
+
+  const gorsel = ligoGorsel('kutlama');
+  if (!gorsel) return null;
+
+  return (
+    <Animated.Image
+      source={gorsel}
+      style={{
+        width: 72, height: 72, resizeMode: 'contain', marginBottom: 8,
+        transform: [{ scale: olcek }, { rotate: donus.interpolate({ inputRange: [-8, 8], outputRange: ['-8deg', '8deg'] }) }],
+      }}
+    />
+  );
+}
+
 function KartModu({ kartlar, mod, onBitti, onUpdate, onGeriAl, srs, sinavMod, sinavSuresi, kartNotlari, onNotKaydet }) {
   const kenar = useSafeAreaInsets();
   const [idx, setIdx] = useState(0);
   const [acik, setAcik] = useState(false);
   const [dogru, setDogru] = useState(0);
   const [xpKazanim, setXpKazanim] = useState(0);
-  const [bonusGoster, setBonusGoster] = useState(false);
+  const [bonusGoster, setBonusGoster] = useState(null); // null | { xp, tur: 'kucuk'|'orta'|'buyuk' }
   const bonusOlcek = useRef(new Animated.Value(0.5)).current;
+  const [kutuAcildiMi, setKutuAcildiMi] = useState(false); // Kutu kapalı mı, dokunulup açıldı mı
+  const kutuAcikRef = useRef(false);
+  const kutuAcilisOlcek = useRef(new Animated.Value(1)).current;
+  const kutuKapanmaZamani = useRef(null);
+
+  // Component ekrandan kaldırılırken (ör. kullanıcı erken çıkarsa)
+  // bekleyen kutu-açma zamanlayıcısını temizle.
+  useEffect(() => {
+    return () => { if (kutuKapanmaZamani.current) clearTimeout(kutuKapanmaZamani.current); };
+  }, []);
+  const ligoPopOlcek = useRef(new Animated.Value(1)).current; // Her doğru cevapta Ligo'nun küçük "pop" tepkisi
+  // CRED'in "ödül bakiyene uçuyor" anından esinlenilen efekt — kazanılan
+  // XP, gerçek sayacın az yukarısında beliriyor ve süzülerek sayaca
+  // "iniyor", tam indiği anda gerçek sayaç zaten güncellenmiş oluyor.
+  const [ucanOdul, setUcanOdul] = useState(null); // null | { id, miktar }
+  const ucanOdulKonum = useRef(new Animated.Value(0)).current;
+  const ucanOdulOpak = useRef(new Animated.Value(0)).current;
   const [erkenBitti, setErkenBitti] = useState(false);
   const [kalanSaniye, setKalanSaniye] = useState(sinavMod ? (sinavSuresi || 2400) : null);
   const [secilen, setSecilen] = useState(null);
@@ -4979,6 +6011,25 @@ function KartModu({ kartlar, mod, onBitti, onUpdate, onGeriAl, srs, sinavMod, si
     return () => clearInterval(t);
   }, [sinavMod]);
 
+  // Kapalı ödül kutusuna dokunulunca çağrılır — XP zaten kazanılmıştır
+  // (oyun mantığı basit kalsın diye), burada sadece görsel "açılış" anı
+  // tetiklenir. Kullanıcı dokunmazsa bir süre sonra otomatik açılır ki
+  // kazandığı ödülü asla kaçırmasın.
+  const kutuAc = () => {
+    if (kutuAcikRef.current) return;
+    kutuAcikRef.current = true;
+    if (kutuKapanmaZamani.current) clearTimeout(kutuKapanmaZamani.current);
+    setKutuAcildiMi(true);
+    titre.dogru();
+    kutuAcilisOlcek.setValue(0.6);
+    Animated.sequence([
+      Animated.spring(kutuAcilisOlcek, { toValue: 1.25, useNativeDriver: true, friction: 3, tension: 200 }),
+      Animated.spring(kutuAcilisOlcek, { toValue: 1, useNativeDriver: true, friction: 4, tension: 160 }),
+      Animated.delay(1400),
+      Animated.timing(bonusOlcek, { toValue: 0.7, duration: 220, useNativeDriver: true }),
+    ]).start(() => setBonusGoster(null));
+  };
+
   const cevapla = (dogruMu, animYon) => {
     const ref = kartRef.current;
     if (!ref || !ref.kart) return;
@@ -5012,8 +6063,23 @@ function KartModu({ kartlar, mod, onBitti, onUpdate, onGeriAl, srs, sinavMod, si
     } else {
       setKombo(0);
     }
-    setGecmis(g => [...g, { kartId: ref.kart.id, oncekiDurum: ref.durum, dogruMu: gercekSonuc, ders: ref.kart.ders }]);
-    onUpdate(ref.kart.id, srsGuncelle(ref.durum, gercekSonuc), gercekSonuc);
+
+    // Öngörülemez ödül kutusu — %10 ihtimalle bu doğru cevapta bir kutu
+    // açılır, içindeki ödül değişken: %60 küçük (+15), %30 orta (+35),
+    // %10 büyük (+75). Belirsizlik, sabit bir ödülden daha güçlü motive
+    // ediyor (Duolingo'nun "treasure chest" mekaniği). Bu bonus, aşağıda
+    // onUpdate'e geçirilip GERÇEK XP'ye ekleniyor.
+    let bonusXp = 0;
+    let kutuTuru = null;
+    if (gercekSonuc && Math.random() < 0.1) {
+      const zar = Math.random();
+      if (zar < 0.6) { bonusXp = 15; kutuTuru = 'kucuk'; }
+      else if (zar < 0.9) { bonusXp = 35; kutuTuru = 'orta'; }
+      else { bonusXp = 75; kutuTuru = 'buyuk'; }
+    }
+
+    setGecmis(g => [...g, { kartId: ref.kart.id, oncekiDurum: ref.durum, dogruMu: gercekSonuc, ders: ref.kart.ders, bonus: bonusXp }]);
+    onUpdate(ref.kart.id, srsGuncelle(ref.durum, gercekSonuc), gercekSonuc, bonusXp);
 
     // Yanlış kartı sakla — "İkinci Şans" ve "Hata Deseni Analizi" için.
     // Geri alıp tekrar cevaplasa bile (gercekSonuc ilk denemeyi esas
@@ -5036,20 +6102,40 @@ function KartModu({ kartlar, mod, onBitti, onUpdate, onGeriAl, srs, sinavMod, si
 
     if (gercekSonuc) {
       setDogru(d => d + 1);
-      // Sürpriz bonus — %10 ihtimalle bu kart 2 katı XP veriyor. Ne
-      // zaman geleceği belli olmadığı için beklenmedik küçük bir
-      // ödül anı yaratıyor.
-      const bonusMu = Math.random() < 0.1;
-      setXpKazanim(x => x + (bonusMu ? 20 : 10));
-      if (bonusMu) {
+      const kazanilanXp = (10 + bonusXp) * (haftaSonuMu() ? 2 : 1);
+      setXpKazanim(x => x + kazanilanXp);
+      // Ligo, kazanılan her XP'ye küçük bir "pop" ile tepki veriyor —
+      // Duolingo'nun maskot XP tepkisinden esinlenildi.
+      ligoPopOlcek.setValue(1);
+      Animated.sequence([
+        Animated.spring(ligoPopOlcek, { toValue: 1.35, useNativeDriver: true, friction: 3, tension: 220 }),
+        Animated.spring(ligoPopOlcek, { toValue: 1, useNativeDriver: true, friction: 4, tension: 160 }),
+      ]).start();
+      // CRED'in "ödül bakiyene uçuyor" anı — kazanılan XP, gerçek
+      // sayacın az yukarısında belirip süzülerek sayaca "iniyor".
+      // Ligo'nun pop anıyla aynı zamanda bitiyor, ikisi birlikte tek
+      // bir "geldi, kabul edildi" hissi veriyor.
+      setUcanOdul({ id: Date.now(), miktar: kazanilanXp });
+      ucanOdulKonum.setValue(-46);
+      ucanOdulOpak.setValue(0);
+      Animated.sequence([
+        Animated.parallel([
+          Animated.timing(ucanOdulOpak, { toValue: 1, duration: 120, useNativeDriver: true }),
+          Animated.timing(ucanOdulKonum, { toValue: -8, duration: 420, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+        ]),
+        Animated.timing(ucanOdulOpak, { toValue: 0, duration: 160, useNativeDriver: true }),
+      ]).start(() => setUcanOdul(null));
+      if (kutuTuru) {
         titre.orta();
-        setBonusGoster(true);
+        kutuAcikRef.current = false;
+        setKutuAcildiMi(false);
+        setBonusGoster({ xp: bonusXp, tur: kutuTuru });
         bonusOlcek.setValue(0.5);
-        Animated.sequence([
-          Animated.spring(bonusOlcek, { toValue: 1, useNativeDriver: true, friction: 5, tension: 120 }),
-          Animated.delay(700),
-          Animated.timing(bonusOlcek, { toValue: 0.7, duration: 200, useNativeDriver: true }),
-        ]).start(() => setBonusGoster(false));
+        Animated.spring(bonusOlcek, { toValue: 1, useNativeDriver: true, friction: 5, tension: 120 }).start();
+        // Kullanıcı 3,5 saniye içinde dokunmazsa kutu kendiliğinden
+        // açılır — ödül asla kaçırılmaz, sadece dokunma fırsatı erken
+        // sona ermiş olur.
+        kutuKapanmaZamani.current = setTimeout(() => { kutuAc(); }, 3500);
       }
       yanlisSayaci.current = 0;   // doğru cevap seriyi sıfırlar
     } else {
@@ -5075,8 +6161,8 @@ function KartModu({ kartlar, mod, onBitti, onUpdate, onGeriAl, srs, sinavMod, si
     if (geriAlinan.current[son.kartId] === undefined) {
       geriAlinan.current[son.kartId] = son.dogruMu;
     }
-    onGeriAl(son.kartId, son.oncekiDurum, son.dogruMu);
-    if (son.dogruMu) { setDogru(d => Math.max(0, d - 1)); setXpKazanim(x => Math.max(0, x - 10)); }
+    onGeriAl(son.kartId, son.oncekiDurum, son.dogruMu, son.bonus || 0);
+    if (son.dogruMu) { setDogru(d => Math.max(0, d - 1)); setXpKazanim(x => Math.max(0, x - (10 + (son.bonus || 0)) * (haftaSonuMu() ? 2 : 1))); }
     if (son.ders) {
       setDersSayac(p => ({
         ...p,
@@ -5099,6 +6185,7 @@ function KartModu({ kartlar, mod, onBitti, onUpdate, onGeriAl, srs, sinavMod, si
     return (
       <View style={{ flex: 1, backgroundColor: FOCUS.bg }}>
         {pct === 100 && <Konfeti />}
+        {pct === 100 && <MukemmelOturumLigo />}
         <ScrollView contentContainerStyle={{ padding: 24, alignItems: 'center', justifyContent: 'center', flexGrow: 1, paddingTop: kenar.top + 24, paddingBottom: kenar.bottom + 24 }}>
           <Text style={{ fontFamily: FONT.mono, fontSize: 13, color: FOCUS.textSoft, letterSpacing: 2, marginBottom: 8 }}>
             {erkenBitti ? 'OTURUM SONLANDIRILDI' : 'SONUÇ RAPORU'}
@@ -5209,7 +6296,9 @@ function KartModu({ kartlar, mod, onBitti, onUpdate, onGeriAl, srs, sinavMod, si
               paddingHorizontal: 18, paddingVertical: 10,
               shadowColor: '#FF6B35', shadowOpacity: 0.7, shadowRadius: 14, elevation: 8,
             }}>
-            <Flame size={20} color="#FFFFFF" fill="#FFFFFF" strokeWidth={2} />
+            {ligoGorsel('mutlu')
+              ? <Image source={ligoGorsel('mutlu')} style={{ width: 24, height: 24, resizeMode: 'contain' }} />
+              : <Flame size={20} color="#FFFFFF" fill="#FFFFFF" strokeWidth={2} />}
             <Text style={{ fontFamily: FONT.baslik, fontSize: 18, color: '#FFFFFF', marginLeft: 8 }}>
               KOMBO ×{komboGoster}
             </Text>
@@ -5217,25 +6306,50 @@ function KartModu({ kartlar, mod, onBitti, onUpdate, onGeriAl, srs, sinavMod, si
         </Animated.View>
       )}
 
-      {/* Sürpriz bonus XP — ne zaman geleceği belli olmayan küçük bir ödül anı */}
-      {bonusGoster && (
-        <Animated.View pointerEvents="none" style={{
-          position: 'absolute', top: kenar.top + 66, alignSelf: 'center', zIndex: 9997,
-          transform: [{ scale: bonusOlcek }], opacity: bonusOlcek,
-        }}>
-          <LinearGradient colors={['#8B5CF6', '#5B21B6']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-            style={{
-              flexDirection: 'row', alignItems: 'center', borderRadius: 999,
-              paddingHorizontal: 18, paddingVertical: 10,
-              shadowColor: '#8B5CF6', shadowOpacity: 0.7, shadowRadius: 14, elevation: 8,
-            }}>
-            <Sparkles size={20} color="#FFFFFF" strokeWidth={2.4} />
-            <Text style={{ fontFamily: FONT.baslik, fontSize: 18, color: '#FFFFFF', marginLeft: 8 }}>
-              ×2 BONUS XP!
-            </Text>
-          </LinearGradient>
-        </Animated.View>
-      )}
+      {/* Öngörülemez Ödül Kutusu — önce KAPALI gelir, dokununca açılır.
+          Dokunulmazsa 3,5 saniye sonra kendiliğinden açılır, ödül asla
+          kaçmaz. Kademeye göre renk/boyut/mesaj değişiyor. */}
+      {bonusGoster && (() => {
+        const KADEME = {
+          kucuk: { renkler: ['#F59E0B', '#B45309'], baslik: 'ÖDÜL KUTUSU!', boyut: 20, golgeRengi: '#F59E0B' },
+          orta: { renkler: ['#8B5CF6', '#5B21B6'], baslik: 'ŞANSLI KUTU!', boyut: 22, golgeRengi: '#8B5CF6' },
+          buyuk: { renkler: ['#EF4444', '#B91C1C'], baslik: 'BÜYÜK ÖDÜL!', boyut: 26, golgeRengi: '#EF4444' },
+        };
+        const k = KADEME[bonusGoster.tur] || KADEME.kucuk;
+        return (
+          <Animated.View pointerEvents={kutuAcildiMi ? 'none' : 'box-none'} style={{
+            position: 'absolute', top: kenar.top + 66, alignSelf: 'center', zIndex: 9997,
+            transform: [{ scale: bonusOlcek }, { scale: kutuAcilisOlcek }], opacity: bonusOlcek,
+          }}>
+            {kutuAcildiMi ? (
+              <LinearGradient colors={k.renkler} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+                style={{
+                  flexDirection: 'row', alignItems: 'center', borderRadius: 999,
+                  paddingHorizontal: 18, paddingVertical: 10,
+                  shadowColor: k.golgeRengi, shadowOpacity: 0.7, shadowRadius: 14, elevation: 8,
+                }}>
+                <Gift size={k.boyut} color="#FFFFFF" strokeWidth={2.4} />
+                <Text style={{ fontFamily: FONT.baslik, fontSize: k.boyut - 2, color: '#FFFFFF', marginLeft: 8 }}>
+                  {k.baslik} +{bonusGoster.xp} XP
+                </Text>
+              </LinearGradient>
+            ) : (
+              <TouchableOpacity onPress={kutuAc} activeOpacity={0.75}
+                style={{
+                  flexDirection: 'row', alignItems: 'center', borderRadius: 999,
+                  paddingHorizontal: 18, paddingVertical: 10, backgroundColor: '#3A3F55',
+                  borderWidth: 1.5, borderColor: 'rgba(255,255,255,0.18)',
+                  shadowColor: '#000', shadowOpacity: 0.3, shadowRadius: 10, elevation: 6,
+                }}>
+                <Gift size={20} color="#FFD966" strokeWidth={2.2} />
+                <Text style={{ fontFamily: FONT.baslik, fontSize: 15, color: '#FFFFFF', marginLeft: 8 }}>
+                  Bir Ödül Kutusu! Aç
+                </Text>
+              </TouchableOpacity>
+            )}
+          </Animated.View>
+        );
+      })()}
 
       {/* Kart bazlı kişisel not düzenleme modalı */}
       <Modal visible={notModalAcik} transparent animationType="fade" onRequestClose={() => setNotModalAcik(false)}>
@@ -5332,7 +6446,10 @@ function KartModu({ kartlar, mod, onBitti, onUpdate, onGeriAl, srs, sinavMod, si
           ikonRenk={FOCUS.textSoft} onPress={() => onBitti(dogru, idx, dersSayac, yanlisKartlar)} boyut={50} ikonBoyut={25} />
         <View style={{ alignItems: 'center' }}>
           {sinavMod && dakika !== null ? (
-            <Text style={{ fontSize: 21, fontFamily: FONT.monoBold, color: zamanAz ? FOCUS.red : FOCUS.ember }}>{dakika}:{String(saniye).padStart(2, '0')}</Text>
+            <>
+              <Text style={{ fontSize: 21, fontFamily: FONT.monoBold, color: zamanAz ? FOCUS.red : FOCUS.ember }}>{dakika}:{String(saniye).padStart(2, '0')}</Text>
+              <SinavBitkisi oran={idx > 0 ? dogru / idx : 0} />
+            </>
           ) : (
             <Text style={{ fontSize: 13, color: FOCUS.textSoft, fontFamily: FONT.mono, letterSpacing: 1 }}>{isQuiz ? 'QUIZ' : 'KART'} MODU</Text>
           )}
@@ -5524,7 +6641,27 @@ function KartModu({ kartlar, mod, onBitti, onUpdate, onGeriAl, srs, sinavMod, si
             )}
           </View>
         </Animated.View>
-        <Text style={{ fontFamily: FONT.mono, fontSize: 13, color: FOCUS.ember, textAlign: 'center', marginTop: 16 }}>+{xpKazanim} XP</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 16, position: 'relative' }}>
+          {ucanOdul && (
+            <Animated.Text
+              key={ucanOdul.id}
+              pointerEvents="none"
+              style={{
+                position: 'absolute', alignSelf: 'center', bottom: 0,
+                fontFamily: FONT.baslik, fontSize: 15, color: '#FFD966',
+                opacity: ucanOdulOpak, transform: [{ translateY: ucanOdulKonum }],
+              }}>
+              +{ucanOdul.miktar} XP
+            </Animated.Text>
+          )}
+          {ligoGorsel('mutlu') ? (
+            <Animated.Image
+              source={ligoGorsel('mutlu')}
+              style={{ width: 20, height: 20, resizeMode: 'contain', marginRight: 6, transform: [{ scale: ligoPopOlcek }] }}
+            />
+          ) : null}
+          <Text style={{ fontFamily: FONT.mono, fontSize: 13, color: FOCUS.ember, textAlign: 'center' }}>+{xpKazanim} XP</Text>
+        </View>
       </ScrollView>
     </View>
   );
@@ -5894,9 +7031,7 @@ function UniteAnalizi({ srs, uniteGecmisi, premium, onPremiumAc }) {
       <View>
         <BolumBaslik Ikon={Target} baslik="ÜNİTE ANALİZİ" renk={P.kirmizi} />
         <View style={{ alignItems: 'center', paddingVertical: 8 }}>
-          {ligoGorsel('normal') && (
-            <Image source={ligoGorsel('normal')} style={{ width: 90, height: 90, resizeMode: 'contain', opacity: 0.85, marginBottom: 12 }} />
-          )}
+          <LigoBosDurum boyut={90} marginBottom={12} opaklik={0.85} />
           <Text style={{ fontFamily: FONT.govde, fontSize: 16, color: P.inkSoft, lineHeight: 23, textAlign: 'center' }}>
             Biraz daha çalış, zayıf konularını{'\n'}burada listeleyeyim.
           </Text>
@@ -6072,11 +7207,6 @@ function HaftalikOzet({ gunluk, gunlukDers, denemeGecmisi, seri, onKapat }) {
 
   return (
     <View style={{ flex: 1, backgroundColor: FOCUS.bg }}>
-      <View style={{ flexDirection: 'row', justifyContent: 'flex-end', paddingTop: kenar.top + 12, paddingHorizontal: 20, paddingBottom: 4 }}>
-        <IkonDugme Ikon={XIkon} dolu renk={FOCUS.panel2} renkKoyu={FOCUS.line}
-          ikonRenk={FOCUS.textSoft} onPress={onKapat} boyut={44} ikonBoyut={20} />
-      </View>
-
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: kenar.bottom + 30 }}>
         <Text style={{ fontFamily: FONT.baslik, fontSize: 30, color: FOCUS.text, marginBottom: 4 }}>Bu Haftan</Text>
         <Text style={{ fontFamily: FONT.govde, fontSize: 15, color: FOCUS.textSoft, marginBottom: 24 }}>
@@ -6144,7 +7274,7 @@ function ProfilScreen(props) {
     bildirimAcik, setBildirimAcik, bildirimSaat, setBildirimSaat,
     gunluk, gunlukDers, denemeGecmisi, onVeriDegisti, hesapVarMi, premium, onPremiumAc, sesAcik, setSesAcik,
     uniteGecmisi, gelecekMektup, setGelecekMektup, davetSayisiGorulen, onDavetKullanildi,
-    grupKodu, setGrupKodu,
+    grupKodu, setGrupKodu, onRecapAc,
   } = props;
   const { P, s: st, DERSLER, seviyeHesapla, koyu } = useTema();
   const kenar = useSafeAreaInsets();
@@ -6384,14 +7514,16 @@ function ProfilScreen(props) {
           Ikon: Lock, gradyan: ['#6D5FE8', '#8E54E9'] },
         { id: 'hakkinda', ad: 'Hakkında', alt: 'Sürüm ve az bilinen özellikler',
           Ikon: Info, gradyan: ['#8E9AAF', '#5C6B82'] },
-        { id: 'davet', ad: 'Arkadaşını Davet Et', alt: 'İkiniz de +50 XP kazanın',
+        { id: 'davet', ad: 'Arkadaşını Davet Et', alt: 'İkiniz de +50 XP ve bonus deneme kazanın',
           Ikon: Users, gradyan: ['#8E54E9', '#6D5FE8'] },
+        { id: 'recap', ad: 'Haftalık Özetim', alt: 'Bu haftaki ilerlemeni tekrar izle',
+          Ikon: TrendingUp, gradyan: ['#27AE60', '#1B7A43'] },
       ].map(b => {
         const GirisIkon = b.Ikon;
         return (
           <View key={b.id} style={[st.golge, { borderRadius: 20, marginBottom: 13, overflow: 'hidden' }]}>
             <TouchableOpacity activeOpacity={0.88}
-              onPress={() => { titre.orta(); setAltSayfa(b.id); }}>
+              onPress={() => { titre.orta(); b.id === 'recap' ? onRecapAc() : setAltSayfa(b.id); }}>
               <LinearGradient colors={b.gradyan} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
                 style={{ flexDirection: 'row', alignItems: 'center', padding: 16 }}>
                 <View style={{
@@ -6706,6 +7838,12 @@ function Icerik() {
   const [xp, setXp] = useState(0);
   const [seri, setSeri] = useState(0);
   const [seriKayboldu, setSeriKayboldu] = useState(null); // kaybolan eski seri sayısı, null = gösterilecek bir şey yok
+  const [seriDondurmaSayisi, setSeriDondurmaSayisi] = useState(0);
+  const [bonusDenemeHakki, setBonusDenemeHakki] = useState(0); // Davet ödülü olarak kazanılan, haftalık limite tabi olmayan ekstra deneme hakkı
+  const [sonRecapHaftasi, setSonRecapHaftasi] = useState('');
+  const [recapAcikMi, setRecapAcikMi] = useState(false);
+  const [seriDondurmaYenilemeAy, setSeriDondurmaYenilemeAy] = useState('');
+  const [seriDonduldu, setSeriDonduldu] = useState(null); // { eskiSeri } — dondurma kullanıldığında gösterilecek mesaj
   const [bugunYeniOgrenilenler, setBugunYeniOgrenilenler] = useState([]); // bugün ilk kez seviye 3'e ulaşan kartlar
   const [uniteGecmisi, setUniteGecmisi] = useState([]); // haftalık ünite yüzdesi anlık görüntüleri
   const [bugun, setBugun] = useState(0);
@@ -6744,6 +7882,8 @@ function Icerik() {
   const [gelecekMektup, setGelecekMektup] = useState(null); // { mesaj, yazildigiTarih, okundu }
   const [davetSayisiGorulen, setDavetSayisiGorulen] = useState(0); // en son XP verdiğimiz davet sayısı
   const [puanlamaIstendi, setPuanlamaIstendi] = useState(false); // Play Store puanlama penceresi bir kez gösterildi mi
+  const [isinmaTarih, setIsinmaTarih] = useState(''); // 60 Saniyelik Isınma'nın en son tamamlandığı gün
+  const [meydanOkumaTarih, setMeydanOkumaTarih] = useState(''); // Günlük Meydan Okuma'nın en son ödülü alındığı gün
   const [grupKodu, setGrupKodu] = useState(null); // null = hiçbir grupta değil
   const [oturum, setOturum] = useState(null);
   const [oturumOkundu, setOturumOkundu] = useState(false);
@@ -6769,12 +7909,24 @@ function Icerik() {
         if (gercekSayi > onceki) {
           const yeniDavet = gercekSayi - onceki;
           setXp(x => x + yeniDavet * 50);
+          setBonusDenemeHakki(h => h + yeniDavet);
           setTimeout(() => setKutlama({ tur: 'davet', veri: { sayi: yeniDavet } }), 400);
           return gercekSayi;
         }
         return onceki;
       });
     }).catch(() => {});
+  }, [oturum?.user?.id, yukluyor]);
+
+  // "Şu an kim çalışıyor" göstergesi için — giriş yapılmışsa, uygulama
+  // açıkken her 4 dakikada bir (ve açılışta hemen bir kez) "şu an
+  // aktifim" damgasını Supabase'e yazar. Grup ekranındaki arkadaşlar
+  // bu damgaya bakarak son 10 dakikada kimin aktif olduğunu görür.
+  useEffect(() => {
+    if (!oturum?.user?.id || yukluyor) return;
+    sonAktifligimiGuncelle();
+    const zamanlayici = setInterval(sonAktifligimiGuncelle, 4 * 60 * 1000);
+    return () => clearInterval(zamanlayici);
   }, [oturum?.user?.id, yukluyor]);
 
   // Kaydırmalı sekme geçişi: yatay hareket baskınsa sekme değiştirir,
@@ -6821,7 +7973,7 @@ function Icerik() {
     (async () => {
       try {
         const keys = ['lgs_srs', 'lgs_xp', 'lgs_seri', 'lgs_bugun', 'lgs_hedef', 'lgs_onboarded', 'lgs_setup', 'lgs_profil',
-          'lgs_son_aktif', 'lgs_sinav_tarihi', 'lgs_sinav_sayisi', 'lgs_en_iyi_sinav', 'lgs_bildirim_acik', 'lgs_bildirim_saat', 'lgs_gunluk', 'lgs_misafir', 'lgs_deneme_gecmisi', 'lgs_gunluk_ders', 'lgs_ses_acik', 'lgs_unite_gecmisi', 'lgs_kart_notlari', 'lgs_gelecek_mektup', 'lgs_davet_gorulen', 'lgs_grup_kodu', 'lgs_puanlama_istendi', 'lgs_yenilikler_v1'];
+          'lgs_son_aktif', 'lgs_sinav_tarihi', 'lgs_sinav_sayisi', 'lgs_en_iyi_sinav', 'lgs_bildirim_acik', 'lgs_bildirim_saat', 'lgs_gunluk', 'lgs_misafir', 'lgs_deneme_gecmisi', 'lgs_gunluk_ders', 'lgs_ses_acik', 'lgs_unite_gecmisi', 'lgs_kart_notlari', 'lgs_gelecek_mektup', 'lgs_davet_gorulen', 'lgs_grup_kodu', 'lgs_puanlama_istendi', 'lgs_yenilikler_v1', 'lgs_isinma_tarih', 'lgs_seri_dondurma', 'lgs_seri_dondurma_ay', 'lgs_bonus_deneme', 'lgs_son_recap_hafta', 'lgs_meydan_okuma_tarih'];
         const pairs = await AsyncStorage.multiGet(keys);
         const d = {};
         pairs.forEach(([k, v]) => { if (v) d[k] = v; });
@@ -6891,6 +8043,12 @@ function Icerik() {
         if (d.lgs_davet_gorulen) setDavetSayisiGorulen(Number(d.lgs_davet_gorulen) || 0);
         if (d.lgs_grup_kodu) setGrupKodu(d.lgs_grup_kodu);
         if (d.lgs_puanlama_istendi === '1') setPuanlamaIstendi(true);
+        if (d.lgs_isinma_tarih) setIsinmaTarih(d.lgs_isinma_tarih);
+        if (d.lgs_meydan_okuma_tarih) setMeydanOkumaTarih(d.lgs_meydan_okuma_tarih);
+        if (d.lgs_seri_dondurma) setSeriDondurmaSayisi(Number(d.lgs_seri_dondurma) || 0);
+        if (d.lgs_seri_dondurma_ay) setSeriDondurmaYenilemeAy(d.lgs_seri_dondurma_ay);
+        if (d.lgs_bonus_deneme) setBonusDenemeHakki(Number(d.lgs_bonus_deneme) || 0);
+        if (d.lgs_son_recap_hafta) setSonRecapHaftasi(d.lgs_son_recap_hafta);
       } catch (e) { console.log('Load error:', e); }
 
       setYukluyor(false);
@@ -6926,10 +8084,16 @@ function Icerik() {
           ['lgs_grup_kodu', grupKodu || ''],
           ['lgs_puanlama_istendi', puanlamaIstendi ? '1' : ''],
           ['lgs_yenilikler_v1', yenilikGorundu ? '1' : ''],
+          ['lgs_isinma_tarih', isinmaTarih],
+          ['lgs_seri_dondurma', String(seriDondurmaSayisi)],
+          ['lgs_seri_dondurma_ay', seriDondurmaYenilemeAy],
+          ['lgs_bonus_deneme', String(bonusDenemeHakki)],
+          ['lgs_son_recap_hafta', sonRecapHaftasi],
+          ['lgs_meydan_okuma_tarih', meydanOkumaTarih],
         ]);
       } catch (e) { console.log('Save error:', e); }
     })();
-  }, [srs, xp, seri, bugun, hedefKart, yukluyor, onboarded, setupDone, profil, sonAktifGun, sinavTarihi, sinavSayisi, enIyiSinavPct, bildirimAcik, bildirimSaat, gunluk, denemeGecmisi, gunlukDers, sesAcik, kartNotlari, gelecekMektup, davetSayisiGorulen, grupKodu, puanlamaIstendi, yenilikGorundu]);
+  }, [srs, xp, seri, bugun, hedefKart, yukluyor, onboarded, setupDone, profil, sonAktifGun, sinavTarihi, sinavSayisi, enIyiSinavPct, bildirimAcik, bildirimSaat, gunluk, denemeGecmisi, gunlukDers, sesAcik, kartNotlari, gelecekMektup, davetSayisiGorulen, grupKodu, puanlamaIstendi, yenilikGorundu, isinmaTarih, seriDondurmaSayisi, seriDondurmaYenilemeAy, bonusDenemeHakki, sonRecapHaftasi, meydanOkumaTarih]);
 
   // Ses ayarını lib/sesler.js'e senkronize et
   useEffect(() => { sesAyarla(sesAcik); }, [sesAcik]);
@@ -6959,10 +8123,33 @@ function Icerik() {
       const fark = Math.round((new Date(bugunStr) - new Date(sonAktifGun)) / GUN);
       setBugun(0);
       setBugunYeniOgrenilenler([]);
-      if (fark > 1 && seri > 0) { setSeriKayboldu(seri); setSeri(0); }
+      if (fark > 1 && seri > 0) {
+        // Tam olarak 1 gün kaçırılmışsa (fark === 2) ve elde dondurma
+        // hakkı varsa, seriyi kırmadan bir dondurma hakkı harcanır.
+        // 2 veya daha fazla gün kaçırıldıysa dondurma yetmez, seri kırılır.
+        if (fark === 2 && seriDondurmaSayisi > 0) {
+          setSeriDondurmaSayisi(s => s - 1);
+          setSeriDonduldu(seri);
+        } else {
+          setSeriKayboldu(seri);
+          setSeri(0);
+        }
+      }
     });
     return () => dinleyici.remove();
-  }, [sonAktifGun, seri]);
+  }, [sonAktifGun, seri, seriDondurmaSayisi]);
+
+  // Seri Dondurma hakkı ayda bir kez ücretsiz yenilenir — ücretsiz
+  // kullanıcı en fazla 1, premium en fazla 3 hak biriktirebilir.
+  useEffect(() => {
+    if (yukluyor) return;
+    const buAy = new Date().toISOString().slice(0, 7); // "2026-09" biçiminde
+    if (seriDondurmaYenilemeAy !== buAy) {
+      const kapasite = premium ? 3 : 1;
+      setSeriDondurmaSayisi(s => Math.min(kapasite, s + 1));
+      setSeriDondurmaYenilemeAy(buAy);
+    }
+  }, [yukluyor, premium, seriDondurmaYenilemeAy]);
 
   // Oturum takibi — giriş yapılmadan uygulamaya geçilmez
   useEffect(() => {
@@ -6974,7 +8161,7 @@ function Icerik() {
     return () => { canli = false; dinleyici.subscription.unsubscribe(); };
   }, []);
 
-  const guncelle = (id, nd, dogruMu) => {
+  const guncelle = (id, nd, dogruMu, bonusXp = 0) => {
     // Bu kart bugün İLK KEZ "öğrenildi" (seviye 3'e ulaştı) sayılıyorsa
     // akşam özetinde göstermek için kaydediyoruz. Sadece bugüne özel,
     // gün değişince sıfırlanıyor.
@@ -7011,10 +8198,11 @@ function Icerik() {
         return { ...g, [gun]: bugunku };
       });
     }
-    // XP yalnızca doğru cevapta verilir; sonuç ekranındaki sayıyla birebir uyumlu
+    // XP yalnızca doğru cevapta verilir; sonuç ekranındaki sayıyla birebir uyumlu.
+    // bonusXp, Öngörülemez Ödül Kutusu'ndan gelen ek XP'dir.
     if (dogruMu) {
       setXp(x => {
-        const yeni = x + 10;
+        const yeni = x + (10 + bonusXp) * (haftaSonuMu() ? 2 : 1);
         // Seviye atlama anını yakala — künyedeki rütbe değiştiyse kutlama tetiklenir
         const eskiSev = seviyeHesapla(x).ad;
         const yeniSev = seviyeHesapla(yeni).ad;
@@ -7036,6 +8224,15 @@ function Icerik() {
             setPuanlamaIstendi(true);
             setTimeout(() => puanlamaIste(), 1500);
           }
+          // Seri kilometre taşları (3, 7, 14, 30, 50, 100, 200, 365 gün) —
+          // Brilliant'ın "Streak Charge" anına karşılık gelen, büyük ve
+          // özel bir kutlama. Diğer günlerde ise sadece küçük bir "pulse"
+          // yeterli (bkz. SeriAlevi bileşeni — orada ayrıca tetikleniyor).
+          const KILOMETRE_TASLARI = [3, 7, 14, 30, 50, 100, 200, 365];
+          if (KILOMETRE_TASLARI.includes(yeni)) {
+            setTimeout(() => { sesCal('seviye'); setKutlama({ tur: 'seri_milestone' }); }, 500);
+          }
+          widgetiGuncelle(yeni);
           return yeni;
         });
         return bugunStr;
@@ -7044,7 +8241,7 @@ function Icerik() {
     });
   };
 
-  const geriAl = (id, oncekiDurum, dogruMuydu) => {
+  const geriAl = (id, oncekiDurum, dogruMuydu, bonusXp = 0) => {
     setSrs(prev => ({ ...prev, [id]: oncekiDurum }));
     setBugun(b => Math.max(0, b - 1));
     const gun = bugunTarihi();
@@ -7057,7 +8254,7 @@ function Icerik() {
         return { ...g, [gun]: bugunku };
       });
     }
-    if (dogruMuydu) setXp(x => Math.max(0, x - 10));
+    if (dogruMuydu) setXp(x => Math.max(0, x - (10 + bonusXp) * (haftaSonuMu() ? 2 : 1)));
   };
 
   const yereldenTazele = async () => {
@@ -7086,8 +8283,15 @@ function Icerik() {
 
   const sinavBaslat = (dersId) => {
     if (!premium && buHaftaDenemeSayisi(denemeGecmisi) >= 1) {
-      setPremiumEkraniAcik(true);
-      return;
+      // Haftalık ücretsiz hak bitmiş — davet ödülüyle kazanılmış bir
+      // bonus hak varsa onu harcayıp devam ediyoruz, yoksa premium
+      // ekranına yönlendiriyoruz.
+      if (bonusDenemeHakki > 0) {
+        setBonusDenemeHakki(h => h - 1);
+      } else {
+        setPremiumEkraniAcik(true);
+        return;
+      }
     }
     setDenemeDersSecimi(dersId || null);
     setSinavMod(true); setAktifDers('sinav'); setMod('quiz'); setAktifUnite(null);
@@ -7112,6 +8316,20 @@ function Icerik() {
     setAktifDers(dersId);
   };
 
+  // Haftalık Recap tetikleme — sadece hafta sonu (o haftanın verisi
+  // "tamamlanmış" sayılabilecekken), bu hafta daha önce gösterilmediyse
+  // ve gerçekten bir aktivite varsa (yepyeni, hiç çalışmamış bir
+  // kullanıcıya boş bir özet göstermemek için) açılır.
+  useEffect(() => {
+    if (yukluyor || !haftaSonuMu()) return;
+    const buHafta = haftaAnahtari();
+    if (sonRecapHaftasi === buHafta) return;
+    const veri = haftalikRecapHesapla(gunluk, gunlukDers);
+    if (veri.toplamKart < 5) return; // Çok az aktivite varsa özet anlamsız kalır
+    setSonRecapHaftasi(buHafta);
+    setTimeout(() => setRecapAcikMi(true), 600);
+  }, [yukluyor, gunluk, gunlukDers, sonRecapHaftasi]);
+
   // Play Store'un native puanlama penceresini açar — kurulu değilse
   // (henüz native build alınmadıysa) sessizce hiçbir şey yapmaz.
   const puanlamaIste = () => {
@@ -7121,6 +8339,22 @@ function Icerik() {
         if (kullanilabilir) StoreReview.requestReview();
       }).catch(() => {});
     } catch (e) {}
+  };
+
+  // 60 Saniyelik Isınma bugün zaten cevaplandı mı? — sadece tarihi
+  // bugünle karşılaştırıyoruz, ayrı bir boolean state'e gerek yok.
+  const isinmaTamamlandiMi = isinmaTarih === bugunTarihi();
+  const isinmaTamamlandi = (dogruMu) => {
+    setIsinmaTarih(bugunTarihi());
+    if (dogruMu) setXp(x => x + 15 * (haftaSonuMu() ? 2 : 1));
+  };
+
+  const meydanOkumaTamamlandiMi = meydanOkumaTarih === bugunTarihi();
+  const meydanOkumaOduluAl = () => {
+    setMeydanOkumaTarih(bugunTarihi());
+    setXp(x => x + 40 * (haftaSonuMu() ? 2 : 1));
+    titre.orta();
+    sesCal('seviye');
   };
 
   // Deneme sonucunda yanlış yapılan kartları, sıcağı sıcağına, hemen
@@ -7340,9 +8574,9 @@ function Icerik() {
   return (
     <Sayfa>
       <Animated.View style={{ flex: 1, transform: [{ translateX: sekmeKaydir }] }} {...sekmePan.panHandlers}>
-        {tab === 'home' && <HomeScreen srs={srs} xp={xp} seri={seri} bugun={bugun} hedefKart={hedefKart} onDersBaslat={setAktifDers} onOncelikliKonu={oncelikliKonuyaGit} sinavTarihi={sinavTarihi} profil={profil} onDenemeSekmesi={() => setTab('deneme')} onProfil={() => setTab('profil')} denemeGecmisi={denemeGecmisi} gunluk={gunluk} gunlukDers={gunlukDers} hesapVarMi={!!oturum} premium={premium} bugunYeniOgrenilenler={bugunYeniOgrenilenler} />}
+        {tab === 'home' && <HomeScreen srs={srs} xp={xp} seri={seri} bugun={bugun} hedefKart={hedefKart} onDersBaslat={setAktifDers} onOncelikliKonu={oncelikliKonuyaGit} sinavTarihi={sinavTarihi} profil={profil} onDenemeSekmesi={() => setTab('deneme')} onProfil={() => setTab('profil')} denemeGecmisi={denemeGecmisi} gunluk={gunluk} gunlukDers={gunlukDers} hesapVarMi={!!oturum} premium={premium} bugunYeniOgrenilenler={bugunYeniOgrenilenler} isinmaTamamlandiMi={isinmaTamamlandiMi} onIsinmaTamamlandi={isinmaTamamlandi} seriDondurmaSayisi={seriDondurmaSayisi} davetSayisiGorulen={davetSayisiGorulen} onDavetEt={() => setTab('profil')} meydanOkumaTamamlandiMi={meydanOkumaTamamlandiMi} onMeydanOkumaOdulAl={meydanOkumaOduluAl} />}
         {tab === 'dersler' && <DerslerScreen srs={srs} onDersVeModBaslat={dersVeModBaslat} onGorselKutuphanesi={() => setGorselKutuphanesiAcik(true)} />}
-        {tab === 'deneme' && <DenemeEkrani srs={srs} denemeGecmisi={denemeGecmisi} premium={premium} onBaslat={sinavBaslat} onNetHesaplayici={() => setNetHesaplayiciAcik(true)} />}
+        {tab === 'deneme' && <DenemeEkrani srs={srs} denemeGecmisi={denemeGecmisi} premium={premium} onBaslat={sinavBaslat} onNetHesaplayici={() => setNetHesaplayiciAcik(true)} bonusDenemeHakki={bonusDenemeHakki} onReklamOduluKazanildi={() => setBonusDenemeHakki(h => h + 1)} />}
         {tab === 'notlar' && <SinavNotlariEkrani />}
         {tab === 'profil' && (
           <ProfilScreen
@@ -7356,17 +8590,27 @@ function Icerik() {
             uniteGecmisi={uniteGecmisi}
             gelecekMektup={gelecekMektup} setGelecekMektup={setGelecekMektup}
             davetSayisiGorulen={davetSayisiGorulen}
-            onDavetKullanildi={() => setXp(x => x + 50)}
+            onDavetKullanildi={() => { setXp(x => x + 50); setBonusDenemeHakki(h => h + 1); }}
             grupKodu={grupKodu} setGrupKodu={setGrupKodu}
             onVeriDegisti={yereldenTazele}
             hesapVarMi={!!oturum}
             premium={premium}
             onPremiumAc={() => setPremiumEkraniAcik(true)}
             sesAcik={sesAcik} setSesAcik={setSesAcik}
+            onRecapAc={() => setRecapAcikMi(true)}
           />
         )}
       </Animated.View>
 
+      <StatusBar barStyle={koyu ? 'light-content' : 'dark-content'} backgroundColor={P.bg} />
+      <TabBar tab={tab} setTab={setTab} premium={premium} />
+
+      {/* Aşağıdaki tam ekran katmanlar TabBar'dan SONRA render ediliyor —
+          React Native'de sonraki kardeş, öncekinin üzerine biner. TabBar
+          buradan önce gelmezse, dock kendi dokunma alanlarıyla bu tam
+          ekran katmanların alt kısmına gelen dokunuşları çalar (özellikle
+          HaftalikRecap gibi ekranın tamamına yayılan dokunma bölgesi olan
+          katmanlarda bu "donmuş" gibi hissettiren bir davranışa yol açar). */}
 
       {/* Hedef tamamlandığında tam ekran kutlama */}
       {kutlama && (
@@ -7377,11 +8621,20 @@ function Icerik() {
           hedefKart={hedefKart}
           veri={kutlama.veri}
           onKapat={() => setKutlama(null)}
+          gunluk={gunluk}
         />
+      )}
+
+      {!kutlama && recapAcikMi && (
+        <HaftalikRecap gunluk={gunluk} gunlukDers={gunlukDers} seri={seri} xp={xp} onKapat={() => setRecapAcikMi(false)} />
       )}
 
       {!kutlama && seriKayboldu !== null && (
         <SeriKayipMesaji eskiSeri={seriKayboldu} onKapat={() => setSeriKayboldu(null)} />
+      )}
+
+      {!kutlama && seriDonduldu !== null && (
+        <SeriDonduMesaji eskiSeri={seriDonduldu} kalanDondurma={seriDondurmaSayisi} onKapat={() => setSeriDonduldu(null)} />
       )}
 
       {!yukluyor && !yenilikGorundu && (
@@ -7389,14 +8642,40 @@ function Icerik() {
       )}
 
       <RozetBildirimi rozet={yeniRozet} onKapat={() => setYeniRozet(null)} />
-
-      <StatusBar barStyle={koyu ? 'light-content' : 'dark-content'} backgroundColor={P.bg} />
-      <TabBar tab={tab} setTab={setTab} premium={premium} />
     </Sayfa>
   );
 }
 
 // ============ KÖK ============
+// Uygulama açılırken font/tema tercihi henüz yüklenmeden gösterilen an —
+// Duolingo'nun karakter merkezli splash ekranından esinlenildi. Özel
+// fontlar bu noktada henüz hazır olmadığı için burada sistem fontuna
+// güveniyoruz (kısa süreliğine görüneceği için fark edilmez).
+function AcilisYuklemesi() {
+  const olcek = useRef(new Animated.Value(0.8)).current;
+  const opak = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.spring(olcek, { toValue: 1, useNativeDriver: true, friction: 5, tension: 90 }),
+      Animated.timing(opak, { toValue: 1, duration: 260, useNativeDriver: true }),
+    ]).start();
+  }, []);
+
+  const gorsel = ligoGorsel('mutlu');
+
+  return (
+    <View style={{ flex: 1, backgroundColor: KAGIT.bg, alignItems: 'center', justifyContent: 'center' }}>
+      <Animated.View style={{ opacity: opak, transform: [{ scale: olcek }], alignItems: 'center' }}>
+        {gorsel ? (
+          <Image source={gorsel} style={{ width: 96, height: 96, resizeMode: 'contain', marginBottom: 14 }} />
+        ) : null}
+        <Text style={{ fontSize: 17, fontWeight: '700', color: '#4B7BE8' }}>Ligo LGS Cepte</Text>
+      </Animated.View>
+    </View>
+  );
+}
+
 function Kok() {
   const [fontsLoaded] = useFonts({
     Baloo2_500Medium, Baloo2_600SemiBold, Baloo2_700Bold, Baloo2_800ExtraBold,
@@ -7422,7 +8701,7 @@ function Kok() {
   };
 
   if (!fontsLoaded || !temaOkundu) {
-    return <View style={{ flex: 1, backgroundColor: KAGIT.bg }} />;
+    return <AcilisYuklemesi />;
   }
 
   // Android'de gezinme çubuğu için en az 12px, jest çubuğu varsa gerçek değeri kullan
