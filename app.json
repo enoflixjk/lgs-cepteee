@@ -19,10 +19,10 @@
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png",
-        "backgroundColor": "#10121A"
+        "backgroundColor": "#0F1530"
       },
       "package": "com.enoflixjk.lgscards",
-      "versionCode": 146,
+      "versionCode": 148,
       "permissions": [
         "VIBRATE",
         "RECEIVE_BOOT_COMPLETED",
@@ -35,7 +35,7 @@
         {
           "image": "./assets/splash-icon.png",
           "resizeMode": "contain",
-          "backgroundColor": "#10121A"
+          "backgroundColor": "#0F1530"
         }
       ],
       [
@@ -65,12 +65,27 @@
             }
           ]
         }
-      ]
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "compileSdkVersion": 36,
+            "targetSdkVersion": 36,
+            "buildToolsVersion": "36.0.0"
+          }
+        }
+      ],
+      "./plugins/withGmsVersionPin",
+      "@sentry/react-native"
     ],
     "extra": {
       "eas": {
         "projectId": "8fddc7bb-fe5a-4c88-b26e-9e65415f685b"
       }
+    },
+    "ios": {
+      "bundleIdentifier": "com.enoflixjk.lgscards"
     }
   }
 }

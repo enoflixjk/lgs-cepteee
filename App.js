@@ -27,13 +27,13 @@ import { CARDS as RAW_CARDS } from './data/cards';
 import {
   House, Library, CircleUser,
   ChevronRight, ChevronLeft, X as XIkon, RotateCcw,
-  Square, SquareCheck, Sun, Moon as AyIkon, Search, Settings, Cloud,
+  Square, SquareCheck, Sun, Moon as AyIkon, Coffee, Search, Settings, Cloud,
   Check, Clock, Layers, ListChecks, Lightbulb,
   Footprints, Flame, CalendarCheck, ShieldCheck, Trophy, Medal, BookMarked,
   Sparkles, Rocket, BrainCircuit, Timer, ChartColumn, Zap, Target, BookOpenCheck, NotebookPen, Plus, Lock, Crown, Share2,
   Image as ImageIcon, Calculator, CircleCheckBig, TrendingUp, TrendingDown, StickyNote, Info, Users, QrCode, Snowflake, Gift, CalendarClock, PlayCircle, Sprout, TreeDeciduous, Hand,
 } from 'lucide-react-native';
-import { TemaSaglayici, useTema, FOCUS, FONT, KAGIT } from './lib/tema';
+import { TemaSaglayici, useTema, FOCUS, CALISMA_ACIK, FONT, KAGIT } from './lib/tema';
 import HesapEkrani from './ekranlar/HesapEkrani';
 import { supabase } from './lib/supabase';
 import { dersGorseli } from './lib/gorseller';
@@ -1084,9 +1084,14 @@ function RozetBildirimi({ rozet, onKapat }) {
   const { P } = useTema();
   const kenar = useSafeAreaInsets();
   const kayma = useRef(new Animated.Value(-140)).current;
+  // Otomatik kapanmaya kadar kalan süreyi görselleştiren ince çubuk —
+  // Magic Patterns'taki "5 saniyelik geri sayım şeridi" fikrinden
+  // esinlenildi. Dışarıdaki 4000ms'lik zamanlayıcıyla eşleşiyor.
+  const cubuk = useRef(new Animated.Value(1)).current;
 
   useEffect(() => {
     Animated.spring(kayma, { toValue: 0, useNativeDriver: true, friction: 7, tension: 60 }).start();
+    Animated.timing(cubuk, { toValue: 0, duration: 4000, easing: Easing.linear, useNativeDriver: false }).start();
   }, []);
 
   if (!rozet) return null;
@@ -1100,20 +1105,26 @@ function RozetBildirimi({ rozet, onKapat }) {
         transform: [{ translateY: kayma }],
       }}>
       <TouchableOpacity onPress={onKapat} activeOpacity={0.9} style={[st_golge, {
-        flexDirection: 'row', alignItems: 'center', backgroundColor: '#1A1D2E',
-        borderRadius: 18, padding: 14, borderWidth: 1.5, borderColor: '#FFD96655',
+        backgroundColor: '#182049', borderRadius: 18, borderWidth: 1.5, borderColor: '#FFD96655', overflow: 'hidden',
       }]}>
-        <View style={{
-          width: 48, height: 48, borderRadius: 15, backgroundColor: '#FFD96626',
-          alignItems: 'center', justifyContent: 'center', marginRight: 13,
-          borderWidth: 1.5, borderColor: '#FFD966',
-        }}>
-          <RozetIkon size={24} color="#FFD966" strokeWidth={2.2} />
+        <View style={{ flexDirection: 'row', alignItems: 'center', padding: 14 }}>
+          <View style={{
+            width: 48, height: 48, borderRadius: 15, backgroundColor: '#FFD96626',
+            alignItems: 'center', justifyContent: 'center', marginRight: 13,
+            borderWidth: 1.5, borderColor: '#FFD966',
+          }}>
+            <RozetIkon size={24} color="#FFD966" strokeWidth={2.2} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontFamily: FONT.monoBold, fontSize: 11, color: '#FFD966', letterSpacing: 1 }}>YENİ ROZET</Text>
+            <Text style={{ fontFamily: FONT.govdeKalin, fontSize: 16, color: '#FFFFFF', marginTop: 1 }}>{rozet.ad}</Text>
+          </View>
+          <ChevronRight size={18} color="#FFFFFF55" strokeWidth={2.4} />
         </View>
-        <View style={{ flex: 1 }}>
-          <Text style={{ fontFamily: FONT.monoBold, fontSize: 11, color: '#FFD966', letterSpacing: 1 }}>YENİ ROZET</Text>
-          <Text style={{ fontFamily: FONT.govdeKalin, fontSize: 16, color: '#FFFFFF', marginTop: 1 }}>{rozet.ad}</Text>
-        </View>
+        <Animated.View style={{
+          height: 3, backgroundColor: '#FFD966',
+          width: cubuk.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] }),
+        }} />
       </TouchableOpacity>
     </Animated.View>
   );
@@ -1305,8 +1316,7 @@ function HaftalikRecap({ gunluk, gunlukDers, seri, xp, onKapat }) {
             Böyle devam edersen önümüzdeki hafta çok daha iyi olacak. Görüşürüz! 👋
           </Text>
           <View style={{ width: '80%', marginTop: 28 }}>
-            <Dugme etiket="TEŞEKKÜRLER LIGO!" renk="#FFFFFF" renkKoyu="rgba(255,255,255,0.7)" tam onPress={onKapat}
-              yazi={{ color: '#5B21B6' }} />
+            <Dugme etiket="TEŞEKKÜRLER LIGO!" renk="#FFFFFF" renkKoyu="rgba(255,255,255,0.7)" yazi="#5B21B6" tam onPress={onKapat} />
           </View>
         </>
       ),
@@ -1577,10 +1587,10 @@ function Kutlama({ tur, seri, xp, hedefKart, veri, onKapat, gunluk }) {
         <View ref={gorselRef} collapsable={false} style={{ width: 320, height: 568 }}>
           <LinearGradient
             colors={
-              seviyeMi ? ['#2A2340', '#4A3B1E'] :
-              davetMi ? ['#241C3E', '#3D2A5C'] :
+              seviyeMi ? ['#212B5C', '#4A3B1E'] :
+              davetMi ? ['#1B2452', '#3D2A5C'] :
               seriMilestoneMi ? ['#2E1A12', '#5C2D0F'] :
-              ['#1A1D2E', '#2A2340']
+              ['#182049', '#212B5C']
             }
             start={{ x: 0.1, y: 0 }} end={{ x: 0.9, y: 1 }}
             style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 28, overflow: 'hidden' }}
@@ -1652,9 +1662,17 @@ function BolumBaslik({ Ikon, baslik, sag, renk }) {
   const { P } = useTema();
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 14 }}>
-      <Ikon size={17} color={renk} strokeWidth={2.4} style={{ marginRight: 8 }} />
-      <Text style={{ flex: 1, fontFamily: FONT.monoBold, fontSize: 13, color: renk, letterSpacing: 1 }}>
-        {baslik}
+      <View style={{
+        width: 30, height: 30, borderRadius: 10, backgroundColor: renk,
+        alignItems: 'center', justifyContent: 'center', marginRight: 10,
+      }}>
+        <Ikon size={16} color="#FFFFFF" strokeWidth={2.6} />
+      </View>
+      <Text style={{ flex: 1, fontFamily: FONT.baslik, fontSize: 16, color: P.ink }}>
+        {/* Tamamı büyük harf gelen başlıklar cümle düzenine çevrilir */}
+        {typeof baslik === 'string' && baslik === baslik.toLocaleUpperCase('tr-TR')
+          ? baslik.charAt(0) + baslik.slice(1).toLocaleLowerCase('tr-TR')
+          : baslik}
       </Text>
       {sag ? (
         <Text style={{ fontFamily: FONT.monoBold, fontSize: 13, color: P.inkFaint }}>{sag}</Text>
@@ -1785,7 +1803,7 @@ function SinavNotlariEkrani() {
       {NOTLAR_ARKAPLAN && (
         <>
           <Image source={NOTLAR_ARKAPLAN} style={{ position: 'absolute', width: '100%', height: '100%' }} resizeMode="cover" />
-          <View pointerEvents="none" style={{ position: 'absolute', width: '100%', height: '100%', backgroundColor: koyu ? 'rgba(16,18,26,0.72)' : 'rgba(255,255,255,0.55)' }} />
+          <View pointerEvents="none" style={{ position: 'absolute', width: '100%', height: '100%', backgroundColor: koyu ? 'rgba(19,31,43,0.82)' : 'rgba(255,255,255,0.88)' }} />
         </>
       )}
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 20, paddingTop: kenar.top + 12, paddingBottom: 28 }}>
@@ -1797,10 +1815,13 @@ function SinavNotlariEkrani() {
 
       {/* Özet */}
       {notlar.length > 0 && (
-        <View style={[st.golge, { borderRadius: 22, marginBottom: 16, overflow: 'hidden' }]}>
-          <LinearGradient colors={['#F7971E', '#FFD200']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ padding: 20 }}>
-            <Text style={{ fontFamily: FONT.govdeKalin, fontSize: 13, color: '#FFFFFFCC', letterSpacing: 1 }}>
-              SON SINAV
+        <View style={{
+          borderRadius: 22, marginBottom: 16, backgroundColor: P.altin,
+          borderBottomWidth: 6, borderBottomColor: P.altinKoyu,
+        }}>
+          <View style={{ padding: 20 }}>
+            <Text style={{ fontFamily: FONT.govdeKalin, fontSize: 14, color: 'rgba(255,255,255,0.9)' }}>
+              Son sınav
             </Text>
             <Text style={{ fontFamily: FONT.baslik, fontSize: 40, color: '#FFFFFF', marginTop: 2 }}>
               {toplamNet(notlar[0])} <Text style={{ fontSize: 18, color: '#FFFFFFCC' }}>net</Text>
@@ -1812,7 +1833,7 @@ function SinavNotlariEkrani() {
                  'İlk sınavınla aynı seviyedesin'}
               </Text>
             )}
-          </LinearGradient>
+          </View>
         </View>
       )}
 
@@ -1822,7 +1843,7 @@ function SinavNotlariEkrani() {
           onPress={() => { titre.hafif(); setFormAcik(true); }} />
       ) : (
         <View style={[st.kart, { marginBottom: 16 }]}>
-          <Text style={st.etiket}>SINAV ADI (İSTEĞE BAĞLI)</Text>
+          <Text style={st.etiket}>Sınav adı (isteğe bağlı)</Text>
           <TextInput onFocus={() => titre.hafif()}
             style={st.girdi}
             value={ad}
@@ -1831,7 +1852,7 @@ function SinavNotlariEkrani() {
             placeholderTextColor={P.inkFaint}
           />
 
-          <Text style={st.etiket}>DERS BAZINDA NET</Text>
+          <Text style={st.etiket}>Ders bazında net</Text>
           {DERSLER.map(d => {
             const DIkon = d.ikon;
             return (
@@ -1892,7 +1913,7 @@ function SinavNotlariEkrani() {
       {/* Geçmiş */}
       {notlar.length > 0 && (
         <>
-          <Text style={st.etiket}>GEÇMİŞ</Text>
+          <Text style={st.etiket}>Geçmiş</Text>
           {notlar.map(n => {
             const tarihStr = new Date(n.tarih).toLocaleDateString('tr-TR', { day: 'numeric', month: 'long' });
             return (
@@ -2119,6 +2140,10 @@ function OdakKadrani({ dakika, onDegis, renk, renkKoyu }) {
 // Görsel yoksa eski Sparkles ikonuna sessizce düşer.
 function PremiumLigoZipla() {
   const olcek = useRef(new Animated.Value(1)).current;
+  // Taç, Ligo'nun üstünde bağımsız olarak hafifçe süzülüp sallanıyor —
+  // Magic Patterns'ta tasarlanan "floating crown" anından esinlenildi.
+  const tacY = useRef(new Animated.Value(0)).current;
+  const tacDonus = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     const dongu = Animated.loop(
@@ -2130,23 +2155,44 @@ function PremiumLigoZipla() {
       ])
     );
     dongu.start();
-    return () => dongu.stop();
+    const tacDongu = Animated.loop(
+      Animated.sequence([
+        Animated.parallel([
+          Animated.timing(tacY, { toValue: -6, duration: 1700, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+          Animated.timing(tacDonus, { toValue: 1, duration: 1700, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+        ]),
+        Animated.parallel([
+          Animated.timing(tacY, { toValue: 0, duration: 1700, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+          Animated.timing(tacDonus, { toValue: 0, duration: 1700, easing: Easing.inOut(Easing.sin), useNativeDriver: true }),
+        ]),
+      ])
+    );
+    tacDongu.start();
+    return () => { dongu.stop(); tacDongu.stop(); };
   }, []);
 
   const gorsel = ligoGorsel('mutlu');
+  const tacDerece = tacDonus.interpolate({ inputRange: [0, 1], outputRange: ['-6deg', '6deg'] });
 
   return (
-    <View style={{
-      width: 84, height: 84, borderRadius: 26, backgroundColor: '#FFB02026',
-      alignItems: 'center', justifyContent: 'center', marginBottom: 18,
-    }}>
-      {gorsel ? (
-        <Animated.Image source={gorsel} style={{ width: 56, height: 56, resizeMode: 'contain', transform: [{ scale: olcek }] }} />
-      ) : (
-        <Animated.View style={{ transform: [{ scale: olcek }] }}>
-          <Sparkles size={40} color="#FFB020" strokeWidth={2} />
-        </Animated.View>
-      )}
+    <View style={{ alignItems: 'center', marginBottom: 6 }}>
+      <Animated.View pointerEvents="none" style={{
+        transform: [{ translateY: tacY }, { rotate: tacDerece }], marginBottom: -14, zIndex: 2,
+      }}>
+        <Crown size={30} color="#FFD36B" fill="#FFB020" strokeWidth={1.6} />
+      </Animated.View>
+      <View style={{
+        width: 84, height: 84, borderRadius: 26, backgroundColor: '#FFB02026',
+        alignItems: 'center', justifyContent: 'center', marginBottom: 18,
+      }}>
+        {gorsel ? (
+          <Animated.Image source={gorsel} style={{ width: 56, height: 56, resizeMode: 'contain', transform: [{ scale: olcek }] }} />
+        ) : (
+          <Animated.View style={{ transform: [{ scale: olcek }] }}>
+            <Sparkles size={40} color="#FFB020" strokeWidth={2} />
+          </Animated.View>
+        )}
+      </View>
     </View>
   );
 }
@@ -2169,13 +2215,13 @@ function PremiumEkrani({ onKapat, onSatinAlindi }) {
   }, []);
 
   const OZELLIKLER = [
-    'Sınırsız kart çalışma — günlük limit yok',
-    'Sınırsız deneme sınavı — istediğin kadar test ol',
-    'İkinci Şans — yanlışlarını anında tekrar çöz',
-    '8 haftalık ilerleme grafiği — gelişimini net gör',
-    'Son 10 deneme birleşik analizi — zayıf noktan netleşsin',
-    'Ayda 3 Seri Dondurma hakkı — bir gün kaçırsan da serin bozulmasın',
-    'Liderlik tablosunda taç rozeti',
+    { metin: 'Sınırsız kart çalışma — günlük limit yok', vurgulu: true },
+    { metin: 'Sınırsız deneme sınavı — istediğin kadar test ol', vurgulu: true },
+    { metin: 'İkinci Şans — yanlışlarını anında tekrar çöz', vurgulu: false },
+    { metin: '8 haftalık ilerleme grafiği — gelişimini net gör', vurgulu: false },
+    { metin: 'Son 10 deneme birleşik analizi — zayıf noktan netleşsin', vurgulu: false },
+    { metin: 'Ayda 3 Seri Dondurma hakkı — bir gün kaçırsan da serin bozulmasın', vurgulu: false },
+    { metin: 'Liderlik tablosunda taç rozeti', vurgulu: false },
   ];
 
   const satinAlBaslat = async () => {
@@ -2203,31 +2249,82 @@ function PremiumEkrani({ onKapat, onSatinAlindi }) {
 
   return (
     <View style={{ flex: 1, backgroundColor: FOCUS.bg, paddingTop: kenar.top, paddingBottom: kenar.bottom }}>
-      <View style={{ flexDirection: 'row', justifyContent: 'flex-end', paddingHorizontal: 20, paddingVertical: 12 }}>
+      {/* Derinlik: Magic Patterns'ta tasarlanan üç yumuşak parıltı katmanı —
+          altın (üst orta), mor (alt sol), mavi (alt sağ). Sadece dekoratif,
+          dokunma olaylarını engellemesin diye pointerEvents="none". */}
+      <View pointerEvents="none" style={{
+        position: 'absolute', top: -90, left: '50%', marginLeft: -140,
+        width: 280, height: 280, borderRadius: 140, backgroundColor: '#FFB02022',
+      }} />
+      <View pointerEvents="none" style={{
+        position: 'absolute', bottom: -110, left: -70,
+        width: 280, height: 280, borderRadius: 140, backgroundColor: '#8E54E922',
+      }} />
+      <View pointerEvents="none" style={{
+        position: 'absolute', bottom: -100, right: -80,
+        width: 260, height: 260, borderRadius: 130, backgroundColor: '#4776E620',
+      }} />
+
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 12 }}>
         <IkonDugme Ikon={XIkon} dolu renk={FOCUS.panel2} renkKoyu={FOCUS.line}
           ikonRenk={FOCUS.textSoft} onPress={onKapat} boyut={44} ikonBoyut={20} />
+        <TouchableOpacity onPress={geriYukle} disabled={islemde} style={{ paddingVertical: 8, paddingHorizontal: 4 }}>
+          <Text style={{ fontFamily: FONT.govdeKalin, fontSize: 12, color: FOCUS.textSoft }}>
+            Satın almalarımı geri yükle
+          </Text>
+        </TouchableOpacity>
       </View>
 
       <ScrollView contentContainerStyle={{ padding: 24, alignItems: 'center' }}>
         <PremiumLigoZipla />
 
-        <Text style={{ fontFamily: FONT.baslik, fontSize: 26, color: FOCUS.text, textAlign: 'center' }}>
-          Ligo Premium
+        <Text style={{ fontFamily: FONT.baslik, fontSize: 30, color: FOCUS.text, textAlign: 'center' }}>
+          Ligo <Text style={{ color: '#FFC24D' }}>Premium</Text>
         </Text>
-        <Text style={{ fontFamily: FONT.govde, fontSize: 15, color: FOCUS.textSoft, textAlign: 'center', marginTop: 8, marginBottom: 26, lineHeight: 21 }}>
+        <Text style={{ fontFamily: FONT.govde, fontSize: 15, color: FOCUS.textSoft, textAlign: 'center', marginTop: 8, lineHeight: 21, maxWidth: 280 }}>
           Sınırsız çalışıp LGS'ye tam gaz hazırlan
         </Text>
 
-        <View style={{ width: '100%', marginBottom: 22 }}>
-          {OZELLIKLER.map(o => (
-            <View key={o} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
+        {/* Güven rozeti — "sınırsız" gibi büyük bir vaadin hemen yanında,
+            kaygıyı azaltan somut bir güvence: istediğin an iptal edebilirsin. */}
+        <View style={{
+          flexDirection: 'row', alignItems: 'center', marginTop: 14, marginBottom: 24,
+          backgroundColor: '#FFB02014', borderWidth: 1, borderColor: '#FFB02040',
+          borderRadius: 999, paddingHorizontal: 13, paddingVertical: 7,
+        }}>
+          <ShieldCheck size={14} color="#FFC24D" strokeWidth={2.4} />
+          <Text style={{ fontFamily: FONT.monoBold, fontSize: 11, color: '#FFC24D', marginLeft: 6 }}>
+            İlk 3 gün ücretsiz · İstediğin an iptal
+          </Text>
+        </View>
+
+        {/* Özellik paneli — hafif cam efekti, en önemli iki özellik
+            (sınırsız kart/deneme) beyaz+kalın, geri kalanı soluk gri. */}
+        <View style={{
+          width: '100%', backgroundColor: '#FFFFFF09', borderWidth: 1, borderColor: '#FFFFFF14',
+          borderRadius: 22, padding: 18, marginBottom: 22,
+        }}>
+          <Text style={{ fontFamily: FONT.monoBold, fontSize: 11, color: '#FFFFFF55', letterSpacing: 1.2, marginBottom: 14 }}>
+            PREMIUM İLE AÇILANLAR
+          </Text>
+          {OZELLIKLER.map((o, i) => (
+            <View key={o.metin} style={{
+              flexDirection: 'row', alignItems: 'flex-start',
+              marginBottom: i === OZELLIKLER.length - 1 ? 0 : 12,
+            }}>
               <View style={{
-                width: 22, height: 22, borderRadius: 11, backgroundColor: '#5EE6A026',
+                width: 21, height: 21, borderRadius: 7, marginTop: 1,
                 alignItems: 'center', justifyContent: 'center', marginRight: 10,
+                backgroundColor: o.vurgulu ? '#FFC24D' : '#FFFFFF12',
               }}>
-                <Check size={13} color="#5EE6A0" strokeWidth={3} />
+                <Check size={13} color={o.vurgulu ? '#1A1500' : '#FFC24D'} strokeWidth={3.4} />
               </View>
-              <Text style={{ fontFamily: FONT.govde, fontSize: 15, color: FOCUS.text, flex: 1 }}>{o}</Text>
+              <Text style={{ fontFamily: FONT.govde, fontSize: 14, color: '#FFFFFFE6', flex: 1, lineHeight: 20 }}>
+                <Text style={{ fontFamily: o.vurgulu ? FONT.monoBold : FONT.govdeKalin, color: '#FFFFFF' }}>
+                  {o.metin.split(' — ')[0]}
+                </Text>
+                <Text style={{ color: '#FFFFFF70' }}> — {o.metin.split(' — ')[1]}</Text>
+              </Text>
             </View>
           ))}
         </View>
@@ -2250,40 +2347,63 @@ function PremiumEkrani({ onKapat, onSatinAlindi }) {
           <YukleniyorGostergesi boyut={64} metin="Paketler yükleniyor..." />
         ) : (
           <>
-            {paketler.map(p => (
-              <TouchableOpacity key={p.identifier} onPress={() => { titre.hafif(); setSecili(p.identifier); }}
-                style={{
-                  width: '100%', flexDirection: 'row', alignItems: 'center',
-                  backgroundColor: secili === p.identifier ? '#FFB02018' : FOCUS.panel,
-                  borderWidth: 1.5, borderColor: secili === p.identifier ? '#FFB020' : FOCUS.line,
-                  borderRadius: 14, padding: 16, marginBottom: 10,
-                }}>
-                <View style={{ flex: 1 }}>
-                  <Text style={{ fontFamily: FONT.govdeKalin, fontSize: 15, color: FOCUS.text }}>
-                    {p.product?.title || p.identifier}
-                  </Text>
-                </View>
-                <Text style={{ fontFamily: FONT.baslik, fontSize: 17, color: FOCUS.text }}>
-                  {p.product?.priceString || ''}
-                </Text>
-              </TouchableOpacity>
-            ))}
+            {/* Plan seçici — yan yana grid, ikinci paket (genelde yıllık)
+                otomatik olarak "EN İYİ DEĞER" rozeti taşıyor. */}
+            <View style={{ flexDirection: 'row', width: '100%', marginBottom: mesaj ? 8 : 0 }}>
+              {paketler.map((p, i) => {
+                const seciliMi = secili === p.identifier;
+                const enIyiDegerMi = paketler.length > 1 && i === paketler.length - 1;
+                return (
+                  <TouchableOpacity key={p.identifier}
+                    onPress={() => { titre.hafif(); setSecili(p.identifier); }}
+                    style={{
+                      flex: 1, marginRight: i === paketler.length - 1 ? 0 : 10,
+                      backgroundColor: seciliMi ? '#FFB02015' : '#FFFFFF08',
+                      borderWidth: 1.5, borderColor: seciliMi ? '#FFC24D' : '#FFFFFF1A',
+                      borderRadius: 18, padding: 15, paddingTop: enIyiDegerMi ? 19 : 15,
+                    }}>
+                    {enIyiDegerMi && (
+                      <View style={{
+                        position: 'absolute', top: -10, left: 14,
+                        backgroundColor: '#FFC24D', borderRadius: 999,
+                        paddingHorizontal: 9, paddingVertical: 3,
+                      }}>
+                        <Text style={{ fontFamily: FONT.monoBold, fontSize: 9, color: '#1A1500', letterSpacing: 0.3 }}>
+                          EN İYİ DEĞER
+                        </Text>
+                      </View>
+                    )}
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                      <Text style={{ fontFamily: FONT.monoBold, fontSize: 12, color: '#FFFFFFB0' }} numberOfLines={1}>
+                        {p.product?.title || p.identifier}
+                      </Text>
+                      <View style={{
+                        width: 18, height: 18, borderRadius: 9, borderWidth: 1.5,
+                        borderColor: seciliMi ? '#FFC24D' : '#FFFFFF33',
+                        backgroundColor: seciliMi ? '#FFC24D' : 'transparent',
+                        alignItems: 'center', justifyContent: 'center',
+                      }}>
+                        {seciliMi && <Check size={11} color="#1A1500" strokeWidth={4} />}
+                      </View>
+                    </View>
+                    <Text style={{ fontFamily: FONT.baslik, fontSize: 19, color: '#FFFFFF' }}>
+                      {p.product?.priceString || ''}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
 
             {mesaj ? (
-              <Text style={{ color: FOCUS.red, fontFamily: FONT.govde, fontSize: 13, marginTop: 6, marginBottom: 6, textAlign: 'center' }}>{mesaj}</Text>
+              <Text style={{ color: FOCUS.red, fontFamily: FONT.govde, fontSize: 13, marginTop: 12, textAlign: 'center' }}>{mesaj}</Text>
             ) : null}
 
-            <View style={{ width: '100%', marginTop: 12 }}>
+            <View style={{ width: '100%', marginTop: 22 }}>
               <Dugme etiket={islemde ? 'İŞLENİYOR...' : '3 GÜN ÜCRETSİZ DENE'}
+                Ikon={islemde ? undefined : ChevronRight}
                 renk="#FFB020" renkKoyu="#C98E1A" tam
                 onPress={islemde || !secili ? undefined : satinAlBaslat} />
             </View>
-
-            <TouchableOpacity onPress={geriYukle} disabled={islemde} style={{ marginTop: 16, paddingVertical: 8 }}>
-              <Text style={{ fontFamily: FONT.govdeKalin, fontSize: 14, color: FOCUS.textSoft }}>
-                Satın almalarımı geri yükle
-              </Text>
-            </TouchableOpacity>
           </>
         )}
       </ScrollView>
@@ -2675,6 +2795,21 @@ function LiderlikEkrani({ profil, setProfil, hesapVarMi, premium, grupKodu, onGr
   const [grupKoduGirdi, setGrupKoduGirdi] = useState('');
   const [qrTaramaAcik, setQrTaramaAcik] = useState(false);
   const [aktifArkadasSayisi, setAktifArkadasSayisi] = useState(0);
+  // "Şu an aktif" noktasının nabız animasyonu — Magic Patterns'taki
+  // "animate-ping" efektinden esinlenildi: sabit nokta + genişleyip
+  // solan bir halka.
+  const nabizOlcek = useRef(new Animated.Value(1)).current;
+  const nabizOpak = useRef(new Animated.Value(0.7)).current;
+  useEffect(() => {
+    const dongu = Animated.loop(
+      Animated.parallel([
+        Animated.timing(nabizOlcek, { toValue: 2.2, duration: 1400, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+        Animated.timing(nabizOpak, { toValue: 0, duration: 1400, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+      ])
+    );
+    dongu.start();
+    return () => { dongu.stop(); nabizOlcek.setValue(1); nabizOpak.setValue(0.7); };
+  }, []);
 
   const yukle = React.useCallback(async () => {
     const s = await liderlikSoru();
@@ -2775,7 +2910,7 @@ function LiderlikEkrani({ profil, setProfil, hesapVarMi, premium, grupKodu, onGr
             <Image source={ligoGorsel('mutlu')} style={{ width: 84, height: 84, resizeMode: 'contain', marginBottom: 10 }} />
           )}
         </View>
-        <Text style={st.etiket}>RUMUZUNU SEÇ</Text>
+        <Text style={st.etiket}>Rumuzunu seç</Text>
         <Text style={{ fontFamily: FONT.govde, fontSize: 14, color: P.inkSoft, marginBottom: 14, lineHeight: 20 }}>
           Liderlik tablosunda gerçek adın değil, seçtiğin rumuz görünür.
         </Text>
@@ -2811,23 +2946,53 @@ function LiderlikEkrani({ profil, setProfil, hesapVarMi, premium, grupKodu, onGr
     ? soruListe.filter(k => grupUyeleri.includes(k.rumuz)).sort((a, b) => b.toplam - a.toplam)
     : [];
 
+  // Haftalık Grup Meydan Okuması — kullanıcı kendi grubunda bu hafta
+  // 1. sıradaysa, listenin üstünde öne çıkan bir kutlama banner'ı
+  // gösteriyoruz. Tamamen canlı veriyle hesaplanıyor, ek bir kayıt
+  // gerektirmiyor.
+  // En az 2 kişi olmadan "meydan okuma" anlamsız — rakipsiz kutlama
+  // göstermeyelim.
+  const benLiderMiyim = grupListesi.length > 1 && grupListesi[0].rumuz === profil.rumuz;
+
   return (
     <>
     <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 20, paddingBottom: 40 }}>
+      {gorunumSekmesi === 'grup' && benLiderMiyim && (
+        <View style={{
+          borderRadius: 20, marginBottom: 16, backgroundColor: P.altin,
+          borderBottomWidth: 5, borderBottomColor: P.altinKoyu,
+        }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', padding: 16 }}>
+            <Crown size={30} color="#FFFFFF" fill="#FFFFFF" strokeWidth={1.5} />
+            <View style={{ marginLeft: 12, flex: 1 }}>
+              <Text style={{ fontFamily: FONT.baslik, fontSize: 16, color: '#FFFFFF' }}>Sen bu haftanın lidersin! 👑</Text>
+              <Text style={{ fontFamily: FONT.govde, fontSize: 12, color: '#FFFFFFDD', marginTop: 2 }}>
+                Pazartesi'ye kadar yerini koru
+              </Text>
+            </View>
+          </View>
+        </View>
+      )}
       <Text style={{ fontFamily: FONT.govde, fontSize: 13, color: P.inkFaint, marginBottom: 14, textAlign: 'center' }}>
         Bu hafta · Pazartesi sıfırlanır
       </Text>
 
-      <View style={{ flexDirection: 'row', backgroundColor: P.bgAlt, borderRadius: 12, padding: 4, marginBottom: 16 }}>
+      <View style={{
+        flexDirection: 'row', backgroundColor: P.bgAlt, borderRadius: 16, padding: 4, marginBottom: 16,
+        borderWidth: 2, borderColor: P.line,
+      }}>
         {[{ id: 'genel', ad: 'Genel' }, { id: 'grup', ad: 'Grubum' }].map(t => (
           <TouchableOpacity key={t.id} onPress={() => { titre.hafif(); setGorunumSekmesi(t.id); }}
             style={{
-              flex: 1, paddingVertical: 9, borderRadius: 9, alignItems: 'center',
-              backgroundColor: gorunumSekmesi === t.id ? P.yuzey : 'transparent',
+              flex: 1, paddingVertical: 9, borderRadius: 12, alignItems: 'center',
+              backgroundColor: gorunumSekmesi === t.id ? P.neonZemin : 'transparent',
+              borderWidth: 2, borderColor: gorunumSekmesi === t.id ? P.neon : 'transparent',
+              borderBottomWidth: gorunumSekmesi === t.id ? 4 : 2,
+              borderBottomColor: gorunumSekmesi === t.id ? P.neonKoyu : 'transparent',
             }}>
             <Text style={{
-              fontFamily: gorunumSekmesi === t.id ? FONT.monoBold : FONT.govde,
-              fontSize: 13, color: gorunumSekmesi === t.id ? P.ink : P.inkFaint,
+              fontFamily: FONT.baslik,
+              fontSize: 15, color: gorunumSekmesi === t.id ? P.neon : P.inkFaint,
             }}>{t.ad}</Text>
           </TouchableOpacity>
         ))}
@@ -2837,7 +3002,7 @@ function LiderlikEkrani({ profil, setProfil, hesapVarMi, premium, grupKodu, onGr
 
       {gorunumSekmesi === 'grup' ? (
         !grupKodu ? (
-          <View style={[st_golge, { backgroundColor: P.yuzey, borderRadius: 18, padding: 18 }]}>
+          <View style={[st.kart, { padding: 18 }]}>
             <Text style={{ fontFamily: FONT.govdeKalin, fontSize: 15, color: P.ink, marginBottom: 6 }}>
               Sadece arkadaşlarınla yarış
             </Text>
@@ -2881,7 +3046,7 @@ function LiderlikEkrani({ profil, setProfil, hesapVarMi, premium, grupKodu, onGr
           </View>
         ) : (
           <>
-            <View style={[st_golge, { backgroundColor: P.mor, borderRadius: 16, padding: 16, marginBottom: 16, flexDirection: 'row', alignItems: 'center' }]}>
+            <View style={{ backgroundColor: P.mor, borderRadius: 20, padding: 16, marginBottom: 16, flexDirection: 'row', alignItems: 'center', borderBottomWidth: 5, borderBottomColor: P.morKoyu }}>
               <View style={{
                 width: 66, height: 66, borderRadius: 12, backgroundColor: 'rgba(255,255,255,0.12)',
                 alignItems: 'center', justifyContent: 'center', marginRight: 14,
@@ -2902,10 +3067,16 @@ function LiderlikEkrani({ profil, setProfil, hesapVarMi, premium, grupKodu, onGr
             {aktifArkadasSayisi > 0 && (
               <View style={{
                 flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start',
-                backgroundColor: '#27AE6018', borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6, marginBottom: 12,
+                backgroundColor: P.yesilZemin, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 6, marginBottom: 12,
               }}>
-                <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: '#27AE60', marginRight: 7 }} />
-                <Text style={{ fontFamily: FONT.monoBold, fontSize: 12, color: '#27AE60' }}>
+                <View style={{ width: 7, height: 7, marginRight: 7, alignItems: 'center', justifyContent: 'center' }}>
+                  <Animated.View pointerEvents="none" style={{
+                    position: 'absolute', width: 7, height: 7, borderRadius: 4, backgroundColor: P.yesil,
+                    opacity: nabizOpak, transform: [{ scale: nabizOlcek }],
+                  }} />
+                  <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: P.yesil }} />
+                </View>
+                <Text style={{ fontFamily: FONT.monoBold, fontSize: 12, color: P.yesil }}>
                   {aktifArkadasSayisi === 1 ? '1 arkadaşın şu an aktif' : `${aktifArkadasSayisi} arkadaşın şu an aktif`}
                 </Text>
               </View>
@@ -2917,24 +3088,55 @@ function LiderlikEkrani({ profil, setProfil, hesapVarMi, premium, grupKodu, onGr
                 Henüz bu grupta bu hafta soru çözen olmamış.{'\n'}Arkadaşların katılınca burada görünecek.
               </Text>
             ) : (
-              grupListesi.map((k, i) => (
-                <View key={k.rumuz} style={[st.dersSatir, {
-                  paddingVertical: 13,
-                  borderColor: k.rumuz === profil.rumuz ? P.altin : P.line,
-                }]}>
-                  <View style={{
-                    width: 30, height: 30, borderRadius: 15, marginRight: 12,
-                    alignItems: 'center', justifyContent: 'center',
-                    backgroundColor: i < 3 ? P.altinZemin : P.bgAlt,
-                  }}>
-                    <Text style={{ fontFamily: FONT.baslik, fontSize: 13, color: i < 3 ? P.altin : P.inkFaint }}>{i + 1}</Text>
+              grupListesi.map((k, i) => {
+                const podyumMu = i < 3;
+                const benMi = k.rumuz === profil.rumuz;
+                // Podyumda olmayan kullanıcı için, 3. sıraya kaç kart
+                // kaldığını gösteren motive edici satır — Magic
+                // Patterns'taki "Podyuma X kart kaldı" fikrinden.
+                const podyumaKalan = (!podyumMu && benMi && grupListesi[2])
+                  ? Math.max(0, grupListesi[2].toplam - k.toplam + 1) : 0;
+                return (
+                  <View key={k.rumuz}>
+                    <View style={[st.dersSatir, {
+                      paddingVertical: podyumMu ? 15 : 13,
+                      borderColor: benMi ? P.altin : P.line,
+                      backgroundColor: podyumMu ? (i === 0 ? P.altinZemin : P.bgAlt) : 'transparent',
+                    }]}>
+                      <View style={{ width: 30, alignItems: 'center', marginRight: 12 }}>
+                        {i === 0 ? (
+                          <Crown size={18} color={P.altin} fill={P.altin} strokeWidth={1.5} />
+                        ) : podyumMu ? (
+                          <Medal size={17} color={i === 1 ? '#C0C0C0' : '#CD7F32'} strokeWidth={2.2} />
+                        ) : null}
+                        <Text style={{
+                          fontFamily: FONT.baslik, fontSize: podyumMu ? 14 : 13, marginTop: podyumMu ? 1 : 0,
+                          color: i === 0 ? P.altin : i === 1 ? '#C0C0C0' : i === 2 ? '#CD7F32' : P.inkFaint,
+                        }}>{i + 1}</Text>
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                          <Text style={{ fontFamily: FONT.govdeKalin, fontSize: podyumMu ? 16 : 15, color: P.ink }} numberOfLines={1}>
+                            {k.rumuz}
+                          </Text>
+                          {benMi && (
+                            <View style={{ backgroundColor: P.mor, borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2, marginLeft: 7 }}>
+                              <Text style={{ fontFamily: FONT.monoBold, fontSize: 9, color: '#FFFFFF' }}>SEN</Text>
+                            </View>
+                          )}
+                        </View>
+                        {i === 0 && <Text style={{ fontFamily: FONT.govde, fontSize: 11, color: P.inkFaint, marginTop: 1 }}>Haftanın lideri</Text>}
+                      </View>
+                      <Text style={{ fontFamily: FONT.baslik, fontSize: podyumMu ? 19 : 17, color: podyumMu ? P.altin : P.mavi }}>{k.toplam}</Text>
+                    </View>
+                    {podyumaKalan > 0 && (
+                      <Text style={{ fontFamily: FONT.monoBold, fontSize: 12, color: P.mor, marginTop: -6, marginBottom: 8, marginLeft: 42 }}>
+                        Podyuma {podyumaKalan} kart kaldı
+                      </Text>
+                    )}
                   </View>
-                  <Text style={{ flex: 1, fontFamily: FONT.govdeKalin, fontSize: 15, color: P.ink }} numberOfLines={1}>
-                    {k.rumuz}{k.rumuz === profil.rumuz ? ' (sen)' : ''}
-                  </Text>
-                  <Text style={{ fontFamily: FONT.baslik, fontSize: 17, color: P.mavi }}>{k.toplam}</Text>
-                </View>
-              ))
+                );
+              })
             )}
           </>
         )
@@ -3212,66 +3414,76 @@ function Sayfa({ children, style }) {
 
 // ============ ONBOARDING ============
 function Onboarding({ onDone }) {
-  const { P, koyu } = useTema();
+  const { P } = useTema();
   const kenar = useSafeAreaInsets();
   const [sayfa, setSayfa] = useState(0);
   const sayfalar = [
-    { harf: '01', baslik: 'Ben Ligo', ifade: 'normal',
+    { baslik: 'Ben Ligo', ifade: 'normal',
       alt: 'LGS yolculuğunda yanındayım.\nAltı dersin tamamı tek yerde.',
-      renk: '#4B7BE8', renkKoyu: '#3A5FC4' },
-    { harf: '02', baslik: 'Aralıklı Tekrar', ifade: 'mutlu',
+      renk: P.mavi, renkKoyu: P.maviKoyu },
+    { baslik: 'Aralıklı tekrar', ifade: 'mutlu',
       alt: 'Her kartı tam unutmaya başladığın\nanda karşına çıkarırım.',
-      renk: '#27AE60', renkKoyu: '#1F8F4E' },
-    { harf: '03', baslik: 'Günlük Halka', ifade: 'normal',
+      renk: P.yesil, renkKoyu: P.yesilKoyu },
+    { baslik: 'Günlük halka', ifade: 'normal',
       alt: 'Her gün bir halka doldurursun.\nÇalıştığın ders rengiyle dolar.',
-      renk: '#E87C4B', renkKoyu: '#C4633A' },
-    { harf: '04', baslik: 'Hazırsın', ifade: 'kutlama',
+      renk: P.mor, renkKoyu: P.morKoyu },
+    { baslik: 'Hazırsın!', ifade: 'kutlama',
       alt: 'Seri kur, rozet topla,\nseviye atla. Hadi başlayalım.',
-      renk: '#FFB020', renkKoyu: '#C98E1A' },
+      renk: P.altin, renkKoyu: P.altinKoyu },
   ];
   const s = sayfalar[sayfa];
   const son = sayfa === sayfalar.length - 1;
   const ligoRes = ligoGorsel(s.ifade);
+  const ilerleme = ((sayfa + 1) / sayfalar.length) * 100;
   return (
-    <View style={{ flex: 1, backgroundColor: koyu ? '#10121A' : '#FAFAFC' }}>
-      {/* Sayfaya göre değişen yumuşak renkli parıltı — zemin sabit kalır, sadece bu katman geçiş yapar */}
-      <View pointerEvents="none" style={{
-        position: 'absolute', top: -80, right: -60, width: 260, height: 260, borderRadius: 130,
-        backgroundColor: s.renk + (koyu ? '26' : '1A'),
-      }} />
-      <View pointerEvents="none" style={{
-        position: 'absolute', bottom: -100, left: -70, width: 220, height: 220, borderRadius: 110,
-        backgroundColor: s.renk + (koyu ? '1C' : '12'),
-      }} />
-
-      <View style={{ flex: 1, justifyContent: 'center', padding: 32, paddingTop: kenar.top + 32, paddingBottom: kenar.bottom + 32 }}>
-        <TouchableOpacity onPress={onDone} style={{ position: 'absolute', top: kenar.top + 14, right: 24 }}>
-          <Text style={{ color: P.inkSoft, fontSize: 17, fontFamily: FONT.govde }}>geç →</Text>
+    <View style={{ flex: 1, backgroundColor: P.bg, paddingTop: kenar.top + 14, paddingBottom: kenar.bottom + 20, paddingHorizontal: 22 }}>
+      {/* Üst: oyun tarzı kalın ilerleme çubuğu + geç */}
+      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+        <View style={{ flex: 1, height: 16, backgroundColor: P.line, borderRadius: 8, overflow: 'hidden' }}>
+          <View style={{ height: '100%', width: ilerleme + '%', backgroundColor: s.renk, borderRadius: 8 }} />
+        </View>
+        <TouchableOpacity onPress={onDone} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }} style={{ marginLeft: 16 }}>
+          <Text style={{ color: P.inkFaint, fontSize: 16, fontFamily: FONT.govdeKalin }}>Geç</Text>
         </TouchableOpacity>
+      </View>
 
+      {/* Orta: Ligo + başlık + açıklama */}
+      <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
         {ligoRes && (
-          <View style={{ alignSelf: 'center', marginBottom: 22 }}>
+          <View style={{ alignItems: 'center', justifyContent: 'center', marginBottom: 26 }}>
             <View style={{
-              position: 'absolute', top: -14, left: -14, right: -14, bottom: -14,
-              borderRadius: 999, backgroundColor: s.renk + (koyu ? '22' : '18'),
+              position: 'absolute', width: 210, height: 210, borderRadius: 105,
+              backgroundColor: s.renk + '1F', borderWidth: 3, borderColor: s.renk + '40',
             }} />
-            <Image source={ligoRes} style={{ width: 140, height: 140, resizeMode: 'contain' }} />
+            {son && [
+              { top: -26, left: -14, boyut: 18 }, { top: 10, right: -30, boyut: 14 }, { bottom: -4, left: -34, boyut: 16 },
+            ].map((p, i) => (
+              <Sparkles key={i} size={p.boyut} color={s.renk} strokeWidth={2.4}
+                style={{ position: 'absolute', top: p.top, bottom: p.bottom, left: p.left, right: p.right }} />
+            ))}
+            <Image source={ligoRes} style={{ width: 160, height: 160, resizeMode: 'contain' }} />
+            {sayfa === 2 && (
+              <View style={{ position: 'absolute', bottom: -8, right: -26 }}>
+                <View style={{
+                  width: 58, height: 58, borderRadius: 29, backgroundColor: P.yuzey,
+                  borderWidth: 2, borderColor: P.line, borderBottomWidth: 4, borderBottomColor: P.lineKoyu,
+                  alignItems: 'center', justifyContent: 'center',
+                }}>
+                  <Halka pct={72} boyut={42} kalinlik={5} renk={s.renk} zemin={P.line}>
+                    <Text style={{ fontFamily: FONT.baslik, fontSize: 11, color: s.renk }}>4/6</Text>
+                  </Halka>
+                </View>
+              </View>
+            )}
           </View>
         )}
-
-        <Text style={{ fontFamily: FONT.mono, fontSize: 14, color: s.renk, marginBottom: 8, letterSpacing: 1.2, fontWeight: '700' }}>
-          {s.harf} / 04
-        </Text>
-        <Text style={{ fontFamily: FONT.baslik, fontSize: 38, color: P.ink, marginBottom: 14 }}>{s.baslik}</Text>
-        <Text style={{ fontSize: 18, color: P.inkSoft, lineHeight: 26, fontFamily: FONT.govde }}>{s.alt}</Text>
-        <View style={{ flexDirection: 'row', marginTop: 36, marginBottom: 26 }}>
-          {sayfalar.map((_, i) => (
-            <View key={i} style={{ width: i === sayfa ? 24 : 8, height: 4, borderRadius: 999, backgroundColor: i === sayfa ? s.renk : P.line, marginRight: 6 }} />
-          ))}
-        </View>
-        <Dugme etiket={son ? 'HADİ BAŞLAYALIM' : 'DEVAM'} renk={s.renk} renkKoyu={s.renkKoyu} tam
-          onPress={() => { son ? onDone() : setSayfa(x => x + 1); }} />
+        <Text style={{ fontFamily: FONT.baslik, fontSize: 34, color: P.ink, marginBottom: 10, textAlign: 'center' }}>{s.baslik}</Text>
+        <Text style={{ fontSize: 18, color: P.inkSoft, lineHeight: 26, fontFamily: FONT.govdeKalin, textAlign: 'center' }}>{s.alt}</Text>
       </View>
+
+      {/* Alt: ekranın dibinde sabit ana buton */}
+      <Dugme etiket={son ? 'HADİ BAŞLAYALIM' : 'DEVAM'} renk={s.renk} renkKoyu={s.renkKoyu} tam
+        onPress={() => { son ? onDone() : setSayfa(x => x + 1); }} />
     </View>
   );
 }
@@ -3283,20 +3495,40 @@ function Onboarding({ onDone }) {
 function KurulumCercevesi({ no, baslik, alt, children, devam }) {
   const { P } = useTema();
   const kenar = useSafeAreaInsets();
+  const ligoRes = ligoGorsel(no === 5 ? 'mutlu' : 'normal');
   return (
     <Sayfa>
-      <ScrollView
-        contentContainerStyle={{ flexGrow: 1, justifyContent: 'center', padding: 28, paddingTop: kenar.top + 28, paddingBottom: kenar.bottom + 28 }}
-        keyboardShouldPersistTaps="handled">
-        <Text style={{ fontFamily: FONT.mono, fontSize: 14, color: P.red, marginBottom: 6 }}>KAYIT FORMU · ADIM {no}/5</Text>
-        <Text style={{ fontFamily: FONT.serif, fontSize: 31, color: P.ink, marginBottom: 8 }}>{baslik}</Text>
-        <Text style={{ fontSize: 18, color: P.inkSoft, fontFamily: FONT.govde, marginBottom: 22 }}>{alt}</Text>
-        {children}
-        <TouchableOpacity style={{ borderWidth: 1.5, borderColor: P.ink, paddingVertical: 15, alignItems: 'center', marginTop: 22, backgroundColor: P.yuzey }}
-          onPress={() => { titre.hafif(); devam(); }}>
-          <Text style={{ fontSize: 17, fontFamily: FONT.monoBold, color: P.ink, letterSpacing: 1 }}>{no === 5 ? 'HAZIRIM' : 'DEVAM'}</Text>
-        </TouchableOpacity>
-      </ScrollView>
+      <View style={{ flex: 1, backgroundColor: P.bg }}>
+        {/* Üst: kalın ilerleme çubuğu (adım/5) */}
+        <View style={{ paddingTop: kenar.top + 14, paddingHorizontal: 22 }}>
+          <View style={{ height: 16, backgroundColor: P.line, borderRadius: 8, overflow: 'hidden' }}>
+            <View style={{ height: '100%', width: (no / 5) * 100 + '%', backgroundColor: P.yesil, borderRadius: 8 }} />
+          </View>
+        </View>
+
+        <ScrollView
+          contentContainerStyle={{ flexGrow: 1, padding: 22, paddingTop: 26 }}
+          keyboardShouldPersistTaps="handled">
+          {/* Ligo soruyu bir konuşma balonunda soruyor */}
+          <View style={{ flexDirection: 'row', alignItems: 'flex-end', marginBottom: 22 }}>
+            {ligoRes && <Image source={ligoRes} style={{ width: 84, height: 84, resizeMode: 'contain', marginRight: 10 }} />}
+            <View style={{
+              flex: 1, backgroundColor: P.yuzey, borderRadius: 18, padding: 14,
+              borderWidth: 2, borderColor: P.line, borderBottomWidth: 4, borderBottomColor: P.lineKoyu,
+            }}>
+              <Text style={{ fontFamily: FONT.baslik, fontSize: 22, color: P.ink }}>{baslik}</Text>
+              <Text style={{ fontSize: 15, color: P.inkSoft, fontFamily: FONT.govdeKalin, marginTop: 3, lineHeight: 21 }}>{alt}</Text>
+            </View>
+          </View>
+          {children}
+        </ScrollView>
+
+        {/* Alt: sabit yeşil devam butonu */}
+        <View style={{ paddingHorizontal: 22, paddingBottom: kenar.bottom + 18, paddingTop: 8 }}>
+          <Dugme etiket={no === 5 ? 'HAZIRIM' : 'DEVAM'} renk={P.yesil} renkKoyu={P.yesilKoyu} tam
+            onPress={() => { titre.hafif(); devam(); }} />
+        </View>
+      </View>
     </Sayfa>
   );
 }
@@ -3363,10 +3595,13 @@ function PersonalSetup({ onDone }) {
         <TouchableOpacity key={n} onPress={() => { titre.hafif(); setHedefKart(n); }}
           style={[st.secenek, hedefKart === n && st.secenekAktif]}>
           {hedefKart === n
-            ? <SquareCheck size={20} color={P.red} strokeWidth={2} style={{ marginRight: 9 }} />
+            ? <SquareCheck size={20} color={P.neon} strokeWidth={2} style={{ marginRight: 9 }} />
             : <Square size={20} color={P.inkFaint} strokeWidth={2} style={{ marginRight: 9 }} />}
-          <Text style={[st.secenekYazi, hedefKart === n && { color: P.red, fontFamily: FONT.monoBold }]}>
+          <Text style={[st.secenekYazi, { flex: 1 }, hedefKart === n && { color: P.neon, fontFamily: FONT.baslik }]}>
             {n === 15 ? 'Hafif' : n === 30 ? 'Normal' : n === 50 ? 'Yoğun' : 'Maraton'}
+          </Text>
+          <Text style={{ fontFamily: FONT.govdeKalin, fontSize: 14, color: hedefKart === n ? P.neon : P.inkFaint }}>
+            {n} kart/gün
           </Text>
         </TouchableOpacity>
       ))}
@@ -3386,6 +3621,7 @@ function PersonalSetup({ onDone }) {
               style={{
                 width: '48%', marginBottom: 12, borderRadius: 18, padding: 14,
                 borderWidth: 2, borderColor: secili ? d.renk : P.line,
+                borderBottomWidth: 4, borderBottomColor: secili ? d.renkKoyu : P.lineKoyu,
                 backgroundColor: secili ? d.acik : P.yuzey,
                 alignItems: 'center',
               }}>
@@ -3393,13 +3629,14 @@ function PersonalSetup({ onDone }) {
                 width: 46, height: 46, borderRadius: 14, marginBottom: 8,
                 alignItems: 'center', justifyContent: 'center',
                 backgroundColor: secili ? d.renk : P.bgAlt,
+                borderBottomWidth: secili ? 3 : 0, borderBottomColor: d.renkKoyu,
               }}>
                 {DersIkon
                   ? <DersIkon size={22} color={secili ? '#FFFFFF' : P.inkFaint} strokeWidth={2.4} />
                   : <Text style={{ fontSize: 20 }}>{d.emoji || '📘'}</Text>}
               </View>
               <Text style={{
-                fontFamily: secili ? FONT.monoBold : FONT.govdeKalin, fontSize: 13,
+                fontFamily: secili ? FONT.baslik : FONT.govdeKalin, fontSize: 14,
                 color: secili ? d.renk : P.ink, textAlign: 'center',
               }}>
                 {d.ad}
@@ -3487,7 +3724,7 @@ function ModSecim({ ders, onBaslat, onGeri, srs, premium, bugun, onLimitAsildi }
 
         {uList.length > 1 && (
           <View style={{ marginBottom: 18 }}>
-            <Text style={st.etiket}>ÜNİTE SEÇ</Text>
+            <Text style={st.etiket}>Ünite seç</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false}>
               {/* Kart sayısı yerine ilerleme çubuğu: öğrenciye nerede kaldığını söyler */}
               <TouchableOpacity onPress={() => { titre.hafif(); setSecUnite(null); }}
@@ -3693,9 +3930,10 @@ function TabBar({ tab, setTab, premium }) {
   const kenar = useSafeAreaInsets();
   const vurgu = premium ? '#FFD966' : P.neon;
   const ligoRes = ligoGorsel('normal');
-  const zeminRengi = koyu ? '#1B1E33' : '#FFFFFF';
-  const zeminRengiKoyu = koyu ? '#20233D' : '#F6F3FE'; // hafif gradyanın ikinci tonu
-  const cerceveRengi = koyu ? '#2A2E4C' : '#EDEBF7';
+  // Oyun dili: düz zemin, belirgin çerçeve, kalın alt kenar (kabarık kapsül)
+  const zeminRengi = P.yuzey;
+  const zeminRengiKoyu = P.yuzey;
+  const cerceveRengi = P.line;
 
   // Kayan aktif gösterge: her yan sekmenin gerçek x konumu onLayout ile
   // ölçülüp saklanıyor; aktif sekme değişince tek bir vurgu kapsülü o
@@ -3723,8 +3961,9 @@ function TabBar({ tab, setTab, premium }) {
     <View style={{ paddingHorizontal: 18, paddingBottom: kenar.bottom + 12, paddingTop: 28, alignItems: 'center' }}>
       {/* Kapsül — hafif gradyanlı zemin, ince çerçeve, hafif gölge. Ortada Ligo için boşluk bırakır. */}
       <View style={[st_golge, {
-        width: '100%', height: 62, borderRadius: 31, overflow: 'hidden',
-        borderWidth: 1, borderColor: cerceveRengi,
+        width: '100%', height: 64, borderRadius: 32, overflow: 'hidden',
+        borderWidth: 2, borderColor: cerceveRengi,
+        borderBottomWidth: 5, borderBottomColor: P.lineKoyu,
       }]}>
         <LinearGradient
           colors={[zeminRengi, zeminRengiKoyu]}
@@ -3760,7 +3999,7 @@ function TabBar({ tab, setTab, premium }) {
           width: 66, height: 66, borderRadius: 33,
           backgroundColor: tab === 'home' ? vurgu : zeminRengi,
           alignItems: 'center', justifyContent: 'center',
-          borderWidth: 4, borderColor: koyu ? '#12142A' : '#F7F5FF',
+          borderWidth: 4, borderColor: P.bg,
           // Android'de "elevation" dairesel bir View'da bile görünmez bir
           // dikdörtgen sınır oluşturup, arkasından kayan içeriği o kare
           // alanda gizleyebiliyor (dairenin kendi şekli değil, kare
@@ -3811,29 +4050,37 @@ function GununSorusu({ srs }) {
 
   return (
     <TouchableOpacity activeOpacity={0.9} onPress={() => setAcik(a => !a)}
-      style={[st_golge, { borderRadius: 18, overflow: 'hidden', marginBottom: 16 }]}>
-      <View style={{ backgroundColor: P.yuzey, borderLeftWidth: 4, borderLeftColor: d.renk, padding: 16 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
-          <Sparkles size={14} color={d.renk} strokeWidth={2.4} />
-          <Text style={{ fontFamily: FONT.monoBold, fontSize: 12, color: d.renk, letterSpacing: 1, marginLeft: 6 }}>
-            GÜNÜN SORUSU · {d.ad}
+      style={{
+        backgroundColor: P.yuzey, borderRadius: 20, padding: 16, marginBottom: 14,
+        borderWidth: 2, borderColor: P.line, borderBottomWidth: 4, borderBottomColor: P.lineKoyu,
+      }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
+        <View style={{
+          width: 30, height: 30, borderRadius: 10, backgroundColor: d.renk,
+          alignItems: 'center', justifyContent: 'center', marginRight: 9,
+        }}>
+          <Sparkles size={16} color="#FFFFFF" strokeWidth={2.4} />
+        </View>
+        <Text style={{ fontFamily: FONT.govdeKalin, fontSize: 14, color: P.ink }}>Günün sorusu</Text>
+        <Text style={{ fontFamily: FONT.govdeKalin, fontSize: 13, color: P.inkSoft, marginLeft: 6 }}>{d.ad}</Text>
+      </View>
+      <Text style={{ fontFamily: FONT.baslik, fontSize: 16, color: P.ink, lineHeight: 22 }}>
+        {kart.soru}
+      </Text>
+      {acik ? (
+        <View style={{
+          marginTop: 12, backgroundColor: d.renk + '1A', borderRadius: 14, padding: 12,
+          borderWidth: 2, borderColor: d.renk + '55',
+        }}>
+          <Text style={{ fontFamily: FONT.baslik, fontSize: 15, color: d.renkKoyu || d.renk, lineHeight: 21 }}>
+            {kart.cevap}
           </Text>
         </View>
-        <Text style={{ fontFamily: FONT.govdeKalin, fontSize: 15, color: P.ink, lineHeight: 21 }}>
-          {kart.soru}
+      ) : (
+        <Text style={{ fontFamily: FONT.govdeKalin, fontSize: 13, color: P.neon, marginTop: 10 }}>
+          Cevabı görmek için dokun
         </Text>
-        {acik ? (
-          <View style={{ marginTop: 12, backgroundColor: P.bgAlt, borderRadius: 12, padding: 12 }}>
-            <Text style={{ fontFamily: FONT.govdeKalin, fontSize: 14, color: d.renk, lineHeight: 20 }}>
-              {kart.cevap}
-            </Text>
-          </View>
-        ) : (
-          <Text style={{ fontFamily: FONT.govde, fontSize: 12, color: P.inkFaint, marginTop: 8 }}>
-            cevabı görmek için dokun
-          </Text>
-        )}
-      </View>
+      )}
     </TouchableOpacity>
   );
 }
@@ -3865,43 +4112,49 @@ function IsinmaKart({ srs, tamamlandiMi, onTamamlandi }) {
   };
 
   return (
-    <View style={[st_golge, {
-      borderRadius: 18, overflow: 'hidden', marginBottom: 16,
-      backgroundColor: P.yuzey, borderLeftWidth: 4, borderLeftColor: '#F59E0B', padding: 16,
-    }]}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
-        <Zap size={14} color="#F59E0B" strokeWidth={2.4} />
-        <Text style={{ fontFamily: FONT.monoBold, fontSize: 12, color: '#F59E0B', letterSpacing: 1, marginLeft: 6 }}>
-          60 SANİYELİK ISINMA · {d.ad}
-        </Text>
+    <View style={{
+      backgroundColor: P.yuzey, borderRadius: 20, padding: 16, marginBottom: 14,
+      borderWidth: 2, borderColor: P.line, borderBottomWidth: 4, borderBottomColor: P.lineKoyu,
+    }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
+        <View style={{
+          width: 30, height: 30, borderRadius: 10, backgroundColor: P.alev,
+          alignItems: 'center', justifyContent: 'center', marginRight: 9,
+        }}>
+          <Zap size={16} color="#FFFFFF" strokeWidth={2.6} />
+        </View>
+        <Text style={{ fontFamily: FONT.govdeKalin, fontSize: 14, color: P.ink }}>60 saniyelik ısınma</Text>
+        <Text style={{ fontFamily: FONT.govdeKalin, fontSize: 13, color: P.inkSoft, marginLeft: 6 }}>{d.ad}</Text>
       </View>
-      <Text style={{ fontFamily: FONT.govdeKalin, fontSize: 15, color: P.ink, lineHeight: 21, marginBottom: 12 }}>
+      <Text style={{ fontFamily: FONT.baslik, fontSize: 16, color: P.ink, lineHeight: 22, marginBottom: 12 }}>
         {kart.soru}
       </Text>
       {siklar.map((s, i) => {
         const dogruMu = s === kart.cevap;
         const gosterSonuc = secilen !== null;
-        const vurgulu = gosterSonuc && (dogruMu || s === secilen);
-        const bg = gosterSonuc ? (dogruMu ? '#DCFCE7' : (s === secilen ? '#FEE2E2' : P.bgAlt)) : P.bgAlt;
-        const kenarRengi = gosterSonuc ? (dogruMu ? '#22C55E' : (s === secilen ? '#EF4444' : 'transparent')) : 'transparent';
-        // Arka plan vurgulandığında (yeşil/kırmızı pastel) sabit koyu bir
-        // metin rengi kullanılıyor — aksi halde karanlık modda P.ink
-        // (açık/beyaz) bu açık pastel zemin üzerinde görünmez oluyordu.
-        const metinRengi = vurgulu ? (dogruMu ? '#166534' : '#991B1B') : P.ink;
+        const buDogru = gosterSonuc && dogruMu;
+        const buYanlis = gosterSonuc && !dogruMu && s === secilen;
+        const kenar = buDogru ? P.yesil : buYanlis ? P.kirmizi : P.line;
+        const alt = buDogru ? P.yesilKoyu : buYanlis ? P.kirmiziKoyu : P.lineKoyu;
         return (
           <TouchableOpacity key={i} disabled={gosterSonuc} onPress={() => secYap(s)} activeOpacity={0.75}
             style={{
-              backgroundColor: bg, borderRadius: 12, borderWidth: gosterSonuc ? 1.5 : 0,
-              borderColor: kenarRengi, padding: 12, marginBottom: 8,
+              backgroundColor: buDogru ? P.yesilZemin : buYanlis ? P.kirmiziZemin : P.yuzey,
+              borderRadius: 14, borderWidth: 2, borderColor: kenar,
+              borderBottomWidth: 4, borderBottomColor: alt,
+              paddingVertical: 11, paddingHorizontal: 13, marginBottom: 8,
             }}>
-            <Text style={{ fontFamily: FONT.govde, fontSize: 13, color: metinRengi }}>{s}</Text>
+            <Text style={{
+              fontFamily: FONT.govdeKalin, fontSize: 14,
+              color: buDogru ? P.yesilKoyu : buYanlis ? P.kirmiziKoyu : P.ink,
+            }}>{s}</Text>
           </TouchableOpacity>
         );
       })}
       {secilen && (
         <Text style={{
-          fontFamily: FONT.govdeKalin, fontSize: 12, marginTop: 2,
-          color: secilen === kart.cevap ? '#22C55E' : '#EF4444',
+          fontFamily: FONT.baslik, fontSize: 14, marginTop: 2,
+          color: secilen === kart.cevap ? P.yesil : P.kirmizi,
         }}>
           {secilen === kart.cevap ? '+15 XP! Harika 🎉' : 'Doğrusu: ' + kart.cevap}
         </Text>
@@ -3910,15 +4163,50 @@ function IsinmaKart({ srs, tamamlandiMi, onTamamlandi }) {
   );
 }
 
+// ============================================================
+// OYUN KUTUSU — Ana Sayfa'daki hızlı giriş blokları.
+// Düz renk + koyu alt kenar; basınca alt kenar çöker (Dugme gibi).
+// ============================================================
+function OyunKutusu({ ad, birim, Ikon, renk, renkKoyu, pasif, onPress, style }) {
+  const [basili, setBasili] = useState(false);
+  return (
+    <TouchableOpacity activeOpacity={1} disabled={pasif}
+      onPressIn={() => setBasili(true)} onPressOut={() => setBasili(false)}
+      onPress={() => { titre.orta(); onPress && onPress(); }}
+      style={[{
+        flex: 1, minHeight: 118, borderRadius: 20, padding: 14,
+        backgroundColor: renk, justifyContent: 'space-between',
+        borderBottomWidth: basili ? 2 : 6, borderBottomColor: renkKoyu,
+        marginTop: basili ? 4 : 0, opacity: pasif ? 0.45 : 1,
+      }, style]}>
+      {Ikon && <Ikon size={26} color="#FFFFFF" strokeWidth={2.8} />}
+      <View>
+        <Text style={{ fontFamily: FONT.baslik, fontSize: 16, color: '#FFFFFF' }}>{ad}</Text>
+        <Text style={{ fontFamily: FONT.govdeKalin, fontSize: 13, color: 'rgba(255,255,255,0.85)', marginTop: 1 }}>{birim}</Text>
+      </View>
+    </TouchableOpacity>
+  );
+}
+
 function HomeScreen({
   srs, xp, seri, bugun, hedefKart, onDersBaslat, onOncelikliKonu, sinavTarihi, profil,
   onProfil, denemeGecmisi, gunluk, gunlukDers, hesapVarMi, premium, onDenemeSekmesi, bugunYeniOgrenilenler,
   isinmaTamamlandiMi, onIsinmaTamamlandi, seriDondurmaSayisi, davetSayisiGorulen, onDavetEt,
-  meydanOkumaTamamlandiMi, onMeydanOkumaOdulAl,
+  meydanOkumaTamamlandiMi, onMeydanOkumaOdulAl, haftalikPlan,
 }) {
   const { P, s: st, DERSLER, seviyeHesapla, koyu } = useTema();
   const [davetNudgeKapandi, setDavetNudgeKapandi] = useState(false);
   const kenar = useSafeAreaInsets();
+
+  // Haftalık Çalışma Planı — bugünün gününe göre planlanmış ders
+  // varsa, ana sayfada nazik bir hatırlatma göster.
+  const bugununPlani = React.useMemo(() => {
+    if (!haftalikPlan) return null;
+    const gunIndex = new Date().getDay();
+    const dersId = haftalikPlan[gunIndex];
+    if (!dersId) return null;
+    return DERSLER.find(d => d.id === dersId) || null;
+  }, [haftalikPlan, DERSLER]);
 
   const meydanOkuma = React.useMemo(
     () => gunlukMeydanOkumaHesapla(gunluk, gunlukDers, hedefKart),
@@ -3965,20 +4253,32 @@ function HomeScreen({
     return h.charAt(0).toLocaleUpperCase('tr-TR') + h.slice(1);
   }, [profil]);
 
+  // Ligo'nun güne özel selamı — saatin diliminine göre değişen kısa
+  // bir ön ek. Mevcut ruh hali (mood) mantığını bozmadan, onun üzerine
+  // eklenen ince bir katman.
+  const gunSelami = React.useMemo(() => {
+    const saat = new Date().getHours();
+    if (saat >= 5 && saat < 11) return 'Günaydın';
+    if (saat >= 11 && saat < 18) return 'İyi günler';
+    if (saat >= 18 && saat < 22) return 'İyi akşamlar';
+    return 'Gece kuşu musun?';
+  }, []);
+
   // Ligo'nun ağzından, o güne özel tek bir karşılama cümlesi — jenerik
   // "Merhaba!" yerine, ruh haline (bugünkü ilerleme) ve seriye göre
   // değişen, kişisel bir his veriyor.
   const ligoKarsilamaSozu = React.useMemo(() => {
     const kim = ad ? ad + ', ' : '';
+    const on = gunSelami + (kim ? ' ' : '! ') + kim;
     const mood = ligoIfadesi({ bugun, hedefKart });
-    if (mood === 'kutlama') return `${kim}bugünkü hedefini tamamladın! Harikasın 🎉`;
-    if (mood === 'mutlu') return `${kim}gayet iyi gidiyorsun, yarı yoldasın!`;
+    if (mood === 'kutlama') return `${on}bugünkü hedefini tamamladın! Harikasın 🎉`;
+    if (mood === 'mutlu') return `${on}gayet iyi gidiyorsun, yarı yoldasın!`;
     if (mood === 'uykulu') {
-      if (seri >= 3) return `${kim}${seri} günlük serini bozma, hadi başlayalım!`;
-      return `${kim}bugün henüz başlamadın, ben seni bekliyorum!`;
+      if (seri >= 3) return `${on}${seri} günlük serini bozma, hadi başlayalım!`;
+      return `${on}bugün henüz başlamadın, ben seni bekliyorum!`;
     }
-    return `${kim}iyi gidiyorsun, böyle devam!`;
-  }, [ad, bugun, hedefKart, seri]);
+    return `${on}iyi gidiyorsun, böyle devam!`;
+  }, [ad, bugun, hedefKart, seri, gunSelami]);
 
   // ---- En zayıf ünite ----
   const enZayif = React.useMemo(() => enOncelikliUnite(srs), [srs]);
@@ -4003,225 +4303,211 @@ function HomeScreen({
   ), [bugunDersler, DERSLER]);
 
   return (
-    <View style={{ flex: 1 }}>
-      {ANASAYFA_ARKAPLAN && (
-        <>
-          <Image source={ANASAYFA_ARKAPLAN} style={{ position: 'absolute', width: '100%', height: '100%' }} resizeMode="cover" />
-          <View pointerEvents="none" style={{ position: 'absolute', width: '100%', height: '100%', backgroundColor: koyu ? 'rgba(16,18,26,0.72)' : 'rgba(255,255,255,0.55)' }} />
-        </>
-      )}
-      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 18, paddingTop: kenar.top + 14, paddingBottom: 30 }}>
+    <View style={{ flex: 1, backgroundColor: P.bg }}>
+      <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 18, paddingTop: kenar.top + 10, paddingBottom: 30 }}>
 
-      {/* ================= LIGO KARŞILAMA HEROSU ================= */}
-      {/* Eskiden burada iki ayrı kart vardı: bir "Selam Ahmet" karşılama
-          bandı + ayrı bir avatar halkası, ve altında ayrı bir halka/geri
-          sayım/seri kartı — iki rakip yuvarlak öge, kalabalık ve soğuk
-          hissettiriyordu. Şimdi hepsi TEK bir bütün: Ligo'nun kendisi
-          ana kahraman, etrafındaki bilgiler sessiz rozetler, ve net
-          TEK bir aksiyon butonu. */}
-      <View style={[st.golge, { borderRadius: 28, marginBottom: 14, overflow: 'hidden' }]}>
-        <LinearGradient
-          colors={koyu ? ['#2B2145', '#20193B', '#171227'] : ['#FFF4EA', '#FFF9F2', '#FFEFE3']}
-          start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-          style={{ paddingVertical: 24, paddingHorizontal: 20, alignItems: 'center' }}>
-
-          {/* Yumuşak ışık halkaları — arka planda derinlik */}
-          <View pointerEvents="none" style={{
-            position: 'absolute', top: -60, left: -50,
-            width: 180, height: 180, borderRadius: 90,
-            backgroundColor: P.neon + (koyu ? '12' : '0D'),
-          }} />
-          <View pointerEvents="none" style={{
-            position: 'absolute', bottom: -70, right: -50,
-            width: 200, height: 200, borderRadius: 100,
-            backgroundColor: P.mor + (koyu ? '10' : '0A'),
-          }} />
-
-          {/* Rütbe rozeti — sağ üstte, sessiz, profile dokunuşla gidiliyor */}
-          <TouchableOpacity onPress={() => { titre.hafif(); onProfil && onProfil(); }} activeOpacity={0.8}
-            style={{
-              position: 'absolute', top: 16, right: 16, flexDirection: 'row', alignItems: 'center',
-              backgroundColor: sev.renk + '24', borderWidth: 1, borderColor: sev.renk + '55',
-              borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5,
-            }}>
-            <SeviyeIkon size={13} color={sev.renk} strokeWidth={2.8} />
-            <Text style={{ fontFamily: FONT.monoBold, fontSize: 11, color: sev.renk, marginLeft: 5, letterSpacing: 0.4 }}>
-              {sev.ad.toLocaleUpperCase('tr-TR')}
-            </Text>
-          </TouchableOpacity>
-
-          {/* Ligo, büyük ve merkezi — halka onun etrafında ince bir çerçeve.
-              Sallama etkileşimi GunlukHalka içinde zaten var, korunuyor. */}
-          <GunlukHalka
-            dersDagilim={bugunDersler}
-            hedef={hedefKart}
-            toplam={bugun}
-            boyut={172}
-            kalinlik={11}
-            premium={premium}
-            seviyeAdi={sev.ad}
-          />
-
-          {/* Ligo'nun ağzından, o güne özel tek bir cümle — jenerik
-              "Merhaba!" yerine duruma göre değişen kişisel bir karşılama */}
-          <Text style={{
-            fontFamily: FONT.baslik, fontSize: 19, color: P.ink, textAlign: 'center',
-            marginTop: 16, lineHeight: 25, paddingHorizontal: 6,
+      {/* ================= ÜST DURUM ÇUBUĞU (oyun tarzı) =================
+          Seri, sınava kalan gün ve seviye tek satırda — oyunlardaki
+          "can / elmas / seviye" çubuğu gibi. Seviyeye dokununca profile. */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <SeriAlevi seri={seri} />
+          <Text style={{ fontFamily: FONT.baslik, fontSize: 19, color: seri > 0 ? P.alev : P.inkFaint, marginLeft: 5 }}>{seri}</Text>
+          {seriDondurmaSayisi > 0 && (
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 10 }}>
+              <Snowflake size={15} color={P.mavi} strokeWidth={2.6} />
+              <Text style={{ fontFamily: FONT.baslik, fontSize: 15, color: P.mavi, marginLeft: 3 }}>{seriDondurmaSayisi}</Text>
+            </View>
+          )}
+        </View>
+        {kalanGun !== null && (
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <CalendarClock size={18} color={P.mor} strokeWidth={2.6} />
+            <Text style={{ fontFamily: FONT.baslik, fontSize: 19, color: P.mor, marginLeft: 5 }}>{kalanGun}</Text>
+            <Text style={{ fontFamily: FONT.govdeKalin, fontSize: 13, color: P.inkSoft, marginLeft: 3 }}>gün</Text>
+          </View>
+        )}
+        <TouchableOpacity onPress={() => { titre.hafif(); onProfil && onProfil(); }} activeOpacity={0.8}
+          style={{
+            flexDirection: 'row', alignItems: 'center',
+            backgroundColor: sev.renk, borderRadius: 12,
+            borderBottomWidth: 3, borderBottomColor: sev.renkKoyu,
+            paddingHorizontal: 10, paddingVertical: 6,
           }}>
-            {ligoKarsilamaSozu}
-          </Text>
-
-          {/* Seri + geri sayım — küçük, sessiz rozetler; kutu içinde kutu değil */}
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 14, flexWrap: 'wrap', justifyContent: 'center' }}>
-            {kalanGun !== null && (
-              <View style={{ flexDirection: 'row', alignItems: 'center', marginRight: 16, marginBottom: 4 }}>
-                <CalendarClock size={13} color={P.inkFaint} strokeWidth={2.4} />
-                <Text style={{ fontFamily: FONT.govdeKalin, fontSize: 12, color: P.inkFaint, marginLeft: 4 }}>
-                  {kalanGun} gün kaldı
-                </Text>
-              </View>
-            )}
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
-              <SeriAlevi seri={seri} />
-              <Text style={{ fontFamily: FONT.govdeKalin, fontSize: 12, color: P.inkFaint, marginLeft: 4 }}>
-                {seri} gün seri
-              </Text>
-              {seriDondurmaSayisi > 0 && (
-                <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 8 }}>
-                  <Snowflake size={11} color="#3B82F6" strokeWidth={2.4} />
-                  <Text style={{ fontFamily: FONT.govdeKalin, fontSize: 11, color: '#3B82F6', marginLeft: 2 }}>
-                    {seriDondurmaSayisi}
-                  </Text>
-                </View>
-              )}
-            </View>
-          </View>
-
-          {projeksiyon && (
-            <Text style={{ fontFamily: FONT.govde, fontSize: 11, color: P.inkFaint, marginTop: 4, textAlign: 'center' }}>
-              Bu hızda gidersen ~{projeksiyon >= 1000 ? (projeksiyon / 1000).toFixed(1).replace('.0', '') + ' bin' : projeksiyon} soru daha çözmüş olursun
-            </Text>
-          )}
-
-          {/* Tek net aksiyon — çoktan seçmeli kutucuklar yerine tek buton */}
-          <View style={{ width: '100%', marginTop: 18 }}>
-            <Dugme etiket="BUGÜN BAŞLA" Ikon={Zap} renk="#FF6B35" renkKoyu="#D8481D" tam
-              onPress={() => {
-                titre.orta();
-                if (enZayif && zayifDers) onOncelikliKonu(enZayif.ders, enZayif.unite);
-                else if (DERSLER[0]) onDersBaslat(DERSLER[0].id);
-              }} />
-          </View>
-
-          {dokunulanDersler.length > 0 && (
-            <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', marginTop: 16 }}>
-              {dokunulanDersler.map(d => (
-                <View key={d.id} style={{
-                  flexDirection: 'row', alignItems: 'center',
-                  backgroundColor: d.renk + '22',
-                  borderRadius: 999, paddingHorizontal: 11, paddingVertical: 6,
-                  marginRight: 7, marginBottom: 7,
-                }}>
-                  <View style={{ width: 9, height: 9, borderRadius: 5, backgroundColor: d.renk, marginRight: 7 }} />
-                  <Text style={{ fontFamily: FONT.govdeKalin, fontSize: 13, color: P.ink }}>{d.ad}</Text>
-                  <Text style={{ fontFamily: FONT.monoBold, fontSize: 13, color: d.renk, marginLeft: 6 }}>{d.sayi}</Text>
-                </View>
-              ))}
-            </View>
-          )}
-        </LinearGradient>
+          <SeviyeIkon size={14} color="#FFFFFF" strokeWidth={2.8} />
+          <Text style={{ fontFamily: FONT.govdeKalin, fontSize: 13, color: '#FFFFFF', marginLeft: 5 }}>{sev.ad}</Text>
+        </TouchableOpacity>
       </View>
 
+      {/* ================= KAHRAMAN: Ligo + günlük halka =================
+          Kartsız, doğrudan zeminde; ekranın en büyük ögesi. */}
+      <View style={{ alignItems: 'center', marginTop: 10, marginBottom: 6 }}>
+        <GunlukHalka
+          dersDagilim={bugunDersler}
+          hedef={hedefKart}
+          toplam={bugun}
+          boyut={196}
+          kalinlik={14}
+          premium={premium}
+          seviyeAdi={sev.ad}
+        />
+        <Text style={{
+          fontFamily: FONT.baslik, fontSize: 21, color: P.ink, textAlign: 'center',
+          marginTop: 14, lineHeight: 27, paddingHorizontal: 8,
+        }}>
+          {ligoKarsilamaSozu}
+        </Text>
+        <Text style={{ fontFamily: FONT.govdeKalin, fontSize: 14, color: P.inkSoft, marginTop: 4 }}>
+          Bugün {bugun}/{hedefKart} kart
+        </Text>
+        {projeksiyon && (
+          <Text style={{ fontFamily: FONT.govde, fontSize: 12, color: P.inkFaint, marginTop: 4, textAlign: 'center' }}>
+            Bu hızda gidersen ~{projeksiyon >= 1000 ? (projeksiyon / 1000).toFixed(1).replace('.0', '') + ' bin' : projeksiyon} soru daha çözmüş olursun
+          </Text>
+        )}
+      </View>
+
+      {dokunulanDersler.length > 0 && (
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', marginTop: 8 }}>
+          {dokunulanDersler.map(d => (
+            <View key={d.id} style={{
+              flexDirection: 'row', alignItems: 'center',
+              backgroundColor: d.renk + '1A', borderWidth: 2, borderColor: d.renk + '55',
+              borderRadius: 12, paddingHorizontal: 10, paddingVertical: 5,
+              marginRight: 7, marginBottom: 7,
+            }}>
+              <View style={{ width: 9, height: 9, borderRadius: 5, backgroundColor: d.renk, marginRight: 6 }} />
+              <Text style={{ fontFamily: FONT.govdeKalin, fontSize: 13, color: P.ink }}>{d.ad}</Text>
+              <Text style={{ fontFamily: FONT.baslik, fontSize: 13, color: d.renk, marginLeft: 6 }}>{d.sayi}</Text>
+            </View>
+          ))}
+        </View>
+      )}
+
+      {/* Haftalık Çalışma Planı — bugüne ders planlandıysa */}
+      {bugununPlani && (
+        <TouchableOpacity activeOpacity={0.85}
+          onPress={() => { titre.hafif(); onDersBaslat(bugununPlani.id); }}
+          style={{
+            flexDirection: 'row', alignItems: 'center', marginTop: 12,
+            backgroundColor: P.yuzey, borderRadius: 18,
+            borderWidth: 2, borderColor: bugununPlani.renk + '66',
+            borderBottomWidth: 4, borderBottomColor: bugununPlani.renk,
+            paddingVertical: 12, paddingHorizontal: 14,
+          }}>
+          <View style={{
+            width: 40, height: 40, borderRadius: 13, backgroundColor: bugununPlani.renk,
+            alignItems: 'center', justifyContent: 'center', marginRight: 12,
+          }}>
+            {bugununPlani.ikon && <bugununPlani.ikon size={20} color="#FFFFFF" strokeWidth={2.4} />}
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontFamily: FONT.govdeKalin, fontSize: 12, color: P.inkSoft }}>Bugünkü planın</Text>
+            <Text style={{ fontFamily: FONT.baslik, fontSize: 17, color: P.ink }}>{bugununPlani.ad}</Text>
+          </View>
+          <ChevronRight size={20} color={bugununPlani.renk} strokeWidth={2.8} />
+        </TouchableOpacity>
+      )}
+
+      {/* Tek net ana aksiyon — oyunların yeşil "başla" butonu */}
+      <View style={{ marginTop: 14, marginBottom: 18 }}>
+        <Dugme etiket="BUGÜN BAŞLA" Ikon={Zap} renk={P.yesil} renkKoyu={P.yesilKoyu} tam
+          onPress={() => {
+            titre.orta();
+            if (enZayif && zayifDers) onOncelikliKonu(enZayif.ders, enZayif.unite);
+            else if (DERSLER[0]) onDersBaslat(DERSLER[0].id);
+          }} />
+      </View>
 
       {haftaSonuMu() && (
         <View style={{
-          flexDirection: 'row', alignItems: 'center', backgroundColor: '#F59E0B1E',
-          borderWidth: 1, borderColor: '#F59E0B40', borderRadius: 14, padding: 12, marginBottom: 16,
+          flexDirection: 'row', alignItems: 'center', backgroundColor: P.altinZemin,
+          borderWidth: 2, borderColor: P.altin + '66', borderBottomWidth: 4, borderBottomColor: P.altin,
+          borderRadius: 16, padding: 12, marginBottom: 14,
         }}>
-          <Gift size={18} color="#F59E0B" strokeWidth={2.4} />
-          <Text style={{ fontFamily: FONT.govdeKalin, fontSize: 13, color: '#F59E0B', marginLeft: 8 }}>
-            Hafta Sonu Bonusu Aktif — Kart çözerken kazandığın XP 2 katı! 🎉
+          <Gift size={20} color={P.altin} strokeWidth={2.6} />
+          <Text style={{ fontFamily: FONT.govdeKalin, fontSize: 13, color: P.altinKoyu, marginLeft: 9, flex: 1 }}>
+            Hafta sonu bonusu aktif: kart çözerken kazandığın XP 2 katı! 🎉
           </Text>
         </View>
       )}
 
-      {/* Davet hatırlatması — Duolingo'nun "Mini Add Friend Nudge"undan
-          esinlenildi: zorlamadan, sadece bir kez, hiç davet göndermemiş
-          ve zaten bir miktar bağlanmış (3+ gün seri) kullanıcılara. */}
+      {/* Davet hatırlatması — sadece bir kez, 3+ gün serisi olan ve hiç
+          davet göndermemiş kullanıcılara */}
       {!premium && davetSayisiGorulen === 0 && seri >= 3 && !davetNudgeKapandi && (
         <TouchableOpacity onPress={() => { titre.hafif(); onDavetEt && onDavetEt(); }} activeOpacity={0.85}
           style={{
-            flexDirection: 'row', alignItems: 'center', backgroundColor: '#8B5CF61E',
-            borderWidth: 1, borderColor: '#8B5CF640', borderRadius: 14, padding: 12, marginBottom: 16,
+            flexDirection: 'row', alignItems: 'center', backgroundColor: P.morZemin,
+            borderWidth: 2, borderColor: P.mor + '66', borderBottomWidth: 4, borderBottomColor: P.mor,
+            borderRadius: 16, padding: 12, marginBottom: 14,
           }}>
-          <Users size={18} color="#8B5CF6" strokeWidth={2.4} />
-          <Text style={{ fontFamily: FONT.govdeKalin, fontSize: 13, color: '#8B5CF6', marginLeft: 8, flex: 1 }}>
+          <Users size={20} color={P.mor} strokeWidth={2.6} />
+          <Text style={{ fontFamily: FONT.govdeKalin, fontSize: 13, color: P.morKoyu, marginLeft: 9, flex: 1 }}>
             İlk arkadaşını davet et, ikiniz de +50 XP ve bonus deneme kazanın
           </Text>
           <TouchableOpacity onPress={(e) => { e.stopPropagation(); setDavetNudgeKapandi(true); }} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-            <XIkon size={16} color="#8B5CF6" strokeWidth={2.4} />
+            <XIkon size={16} color={P.mor} strokeWidth={2.6} />
           </TouchableOpacity>
         </TouchableOpacity>
       )}
 
-      <IsinmaKart srs={srs} tamamlandiMi={isinmaTamamlandiMi} onTamamlandi={onIsinmaTamamlandi} />
-
-      {/* Günlük Meydan Okuma — her gün değişen, rutini kıran küçük bir
-          hedef. Duolingo'nun "Daily Quest"inden esinlenildi. İlerleme
-          zaten toplanan günlük veriden hesaplanıyor, ekstra bir eylem
-          gerektirmiyor — normal çalışmanın kendisi ilerletiyor. */}
+      {/* ================= GÜNÜN GÖREVİ ================= */}
       {(() => {
         const MEYDAN_IKON = { Layers, Zap, Target };
         const MIkon = MEYDAN_IKON[meydanOkuma.ikonAdi] || Zap;
         const tamamMi = meydanOkuma.tamamlandiMi;
         return (
           <View style={{
-            backgroundColor: tamamMi ? '#27AE6018' : P.bgAlt, borderRadius: 16, padding: 14, marginBottom: 16,
-            borderWidth: 1.5, borderColor: tamamMi ? '#27AE6050' : 'transparent',
+            backgroundColor: tamamMi ? P.yesilZemin : P.yuzey, borderRadius: 20, padding: 14, marginBottom: 14,
+            borderWidth: 2, borderColor: tamamMi ? P.yesil : P.line,
+            borderBottomWidth: 4, borderBottomColor: tamamMi ? P.yesilKoyu : P.lineKoyu,
           }}>
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               <View style={{
-                width: 34, height: 34, borderRadius: 12, alignItems: 'center', justifyContent: 'center',
-                backgroundColor: tamamMi ? '#27AE6030' : '#8B5CF622', marginRight: 10,
+                width: 44, height: 44, borderRadius: 14, alignItems: 'center', justifyContent: 'center',
+                backgroundColor: tamamMi ? P.yesil : P.altin,
+                borderBottomWidth: 3, borderBottomColor: tamamMi ? P.yesilKoyu : P.altinKoyu,
+                marginRight: 12,
               }}>
                 {tamamMi
-                  ? <CircleCheckBig size={18} color="#27AE60" strokeWidth={2.4} />
-                  : <MIkon size={17} color="#8B5CF6" strokeWidth={2.4} />}
+                  ? <CircleCheckBig size={22} color="#FFFFFF" strokeWidth={2.6} />
+                  : <MIkon size={22} color="#FFFFFF" strokeWidth={2.6} />}
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={{ fontFamily: FONT.monoBold, fontSize: 10, color: tamamMi ? '#27AE60' : '#8B5CF6', letterSpacing: 0.5 }}>
-                  GÜNÜN MEYDAN OKUMASI
+                <Text style={{ fontFamily: FONT.govdeKalin, fontSize: 12, color: tamamMi ? P.yesilKoyu : P.inkSoft }}>
+                  Günün görevi
                 </Text>
-                <Text style={{ fontFamily: FONT.govdeKalin, fontSize: 13, color: P.ink, marginTop: 1 }}>
+                <Text style={{ fontFamily: FONT.baslik, fontSize: 16, color: P.ink, marginTop: 1 }}>
                   {tamamMi ? 'Tamamlandı! +40 XP kazandın' : meydanOkuma.baslik(meydanOkuma.hedef)}
                 </Text>
               </View>
-              {!tamamMi && (
-                <Text style={{ fontFamily: FONT.mono, fontSize: 12, color: P.inkFaint }}>
-                  {meydanOkuma.ilerleme}/{meydanOkuma.hedef}
-                </Text>
-              )}
             </View>
             {!tamamMi && (
-              <View style={{ height: 5, backgroundColor: P.bg, borderRadius: 999, marginTop: 10, overflow: 'hidden' }}>
-                <View style={{ height: '100%', width: `${meydanOkuma.yuzde}%`, backgroundColor: '#8B5CF6', borderRadius: 999 }} />
+              <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 12 }}>
+                <View style={{ flex: 1, height: 16, backgroundColor: P.line, borderRadius: 8, overflow: 'hidden' }}>
+                  <View style={{ height: '100%', width: `${meydanOkuma.yuzde}%`, backgroundColor: P.altin, borderRadius: 8 }} />
+                </View>
+                <Text style={{ fontFamily: FONT.baslik, fontSize: 14, color: P.inkSoft, marginLeft: 10 }}>
+                  {meydanOkuma.ilerleme}/{meydanOkuma.hedef}
+                </Text>
               </View>
             )}
           </View>
         );
       })()}
 
+      <IsinmaKart srs={srs} tamamlandiMi={isinmaTamamlandiMi} onTamamlandi={onIsinmaTamamlandi} />
+
       <GununSorusu srs={srs} />
 
-      {/* ================= BUGÜN NE YAPMALIYIM (Günün Önceliği + Hızlı Başla birleşik) ================= */}
-      <Text style={st.etiket}>BUGÜN NE YAPMALIYIM</Text>
-
+      {/* ================= SENİN İÇİN ÖNERİ ================= */}
       {enZayif && zayifDers && (
-        <View style={[st.kart, { borderColor: P.altin + '55' }]}>
-          <Text style={{ fontFamily: FONT.govde, fontSize: 16, color: P.ink, lineHeight: 24, marginBottom: 15 }}>
-            <Text style={{ fontFamily: FONT.monoBold, color: zayifDers.renk }}>{zayifDers.ad}</Text>
+        <View style={[st.kart, { borderColor: P.altin + '66', borderBottomColor: P.altin }]}>
+          <Text style={{ fontFamily: FONT.govdeKalin, fontSize: 12, color: P.inkSoft, marginBottom: 4 }}>Senin için öneri</Text>
+          <Text style={{ fontFamily: FONT.govde, fontSize: 16, color: P.ink, lineHeight: 24, marginBottom: 14 }}>
+            <Text style={{ fontFamily: FONT.baslik, color: zayifDers.renk }}>{zayifDers.ad}</Text>
             {' dersindeki '}
-            <Text style={{ fontFamily: FONT.monoBold }}>{enZayif.unite}</Text>
+            <Text style={{ fontFamily: FONT.baslik }}>{enZayif.unite}</Text>
             {' en zayıf konun. Bugün oradan başla.'}
           </Text>
           <Dugme etiket="BU KONUYA ÇALIŞ" Ikon={Zap} renk={P.altin} renkKoyu={P.altinKoyu} tam
@@ -4229,25 +4515,24 @@ function HomeScreen({
         </View>
       )}
 
-      {/* ================= BUGÜN NE ÖĞRENDİM ================= */}
+      {/* ================= BUGÜN ÖĞRENDİKLERİN ================= */}
       {bugunYeniOgrenilenler && bugunYeniOgrenilenler.length > 0 && (
-        <View style={[st.kart, { borderColor: P.yesil + '40' }]}>
+        <View style={[st.kart, { borderColor: P.yesil + '66', borderBottomColor: P.yesil }]}>
           <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
             <View style={{
-              width: 36, height: 36, borderRadius: 12, backgroundColor: P.yesilZemin,
+              width: 36, height: 36, borderRadius: 12, backgroundColor: P.yesil,
+              borderBottomWidth: 3, borderBottomColor: P.yesilKoyu,
               alignItems: 'center', justifyContent: 'center', marginRight: 11,
             }}>
-              <CircleCheckBig size={20} color={P.yesil} strokeWidth={2.6} />
+              <CircleCheckBig size={19} color="#FFFFFF" strokeWidth={2.6} />
             </View>
-            <Text style={{ fontFamily: FONT.monoBold, fontSize: 14, color: P.yesil, letterSpacing: 1.2 }}>
-              BUGÜN ÖĞRENDİKLERİN
-            </Text>
+            <Text style={{ fontFamily: FONT.baslik, fontSize: 16, color: P.ink }}>Bugün öğrendiklerin</Text>
           </View>
           {bugunYeniOgrenilenler.slice(0, 3).map((k, i) => {
             const d = DERSLER.find(x => x.id === k.ders);
             return (
               <View key={k.id} style={{ flexDirection: 'row', alignItems: 'flex-start', marginBottom: 8 }}>
-                <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: d?.renk || P.yesil, marginTop: 7, marginRight: 9 }} />
+                <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: d?.renk || P.yesil, marginTop: 7, marginRight: 9 }} />
                 <Text style={{ flex: 1, fontFamily: FONT.govde, fontSize: 14, color: P.inkSoft, lineHeight: 20 }} numberOfLines={2}>
                   {k.soru}
                 </Text>
@@ -4262,34 +4547,17 @@ function HomeScreen({
         </View>
       )}
 
-      <View style={{ flexDirection: 'row', marginBottom: 8 }}>
+      {/* ================= HIZLI GİRİŞ — basılabilir renk blokları ================= */}
+      <View style={{ flexDirection: 'row', marginBottom: 8, marginTop: 4 }}>
         {[
-          { id: 'deneme', ad: 'Deneme', sayi: '', birim: '40 dakika', Ikon: Clock, g: ['#00C6FF', '#0072FF'], git: onDenemeSekmesi },
-          { id: 'yanlis', ad: 'Yanlışlarım', sayi: '', birim: yanlisSayisi > 0 ? 'tekrar et' : 'temiz', Ikon: RotateCcw, g: ['#FF5A5F', '#B31217'], git: () => onDersBaslat('yanlislar'), pasif: yanlisSayisi === 0 },
-          { id: 'zorlu', ad: 'Zorlu Kartlar', sayi: '', birim: zorluSayisi > 0 ? 'tekrar et' : 'temiz', Ikon: BrainCircuit, g: ['#8B5CF6', '#5B21B6'], git: () => onDersBaslat('zorlu'), pasif: zorluSayisi === 0 },
-        ].map((a, i) => {
-          const AksiyonIkon = a.Ikon;
-          return (
-            <View key={a.id} style={[st.golge, {
-              flex: 1, marginRight: i < 2 ? 12 : 0,
-              borderRadius: 20, overflow: 'hidden', opacity: a.pasif ? 0.45 : 1,
-            }]}>
-              <TouchableOpacity activeOpacity={0.88} disabled={a.pasif}
-                onPress={() => { titre.orta(); a.git(); }}>
-                <LinearGradient colors={a.g} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-                  style={{ padding: 16, minHeight: 124, justifyContent: 'space-between' }}>
-                  <AksiyonIkon size={26} color="#FFFFFF" strokeWidth={2.8} />
-                  <View>
-                    <Text style={{ fontFamily: FONT.monoBold, fontSize: 17, color: '#FFFFFF' }}>{a.ad}</Text>
-                    <Text style={{ fontFamily: FONT.govdeKalin, fontSize: 14, color: '#FFFFFFB0', marginTop: 2 }}>
-                      {a.birim}
-                    </Text>
-                  </View>
-                </LinearGradient>
-              </TouchableOpacity>
-            </View>
-          );
-        })}
+          { id: 'deneme', ad: 'Deneme', sayi: '', birim: '40 dakika', Ikon: Clock, oyunRenk: [P.mavi, P.maviKoyu], git: onDenemeSekmesi },
+          { id: 'yanlis', ad: 'Yanlışlarım', sayi: '', birim: yanlisSayisi > 0 ? 'tekrar et' : 'temiz', Ikon: RotateCcw, oyunRenk: [P.kirmizi, P.kirmiziKoyu], git: () => onDersBaslat('yanlislar'), pasif: yanlisSayisi === 0 },
+          { id: 'zorlu', ad: 'Zorlu Kartlar', sayi: '', birim: zorluSayisi > 0 ? 'tekrar et' : 'temiz', Ikon: BrainCircuit, oyunRenk: [P.mor, P.morKoyu], git: () => onDersBaslat('zorlu'), pasif: zorluSayisi === 0 },
+        ].map((a, i) => (
+          <OyunKutusu key={a.id} ad={a.ad} birim={a.birim} Ikon={a.Ikon}
+            renk={a.oyunRenk[0]} renkKoyu={a.oyunRenk[1]} pasif={a.pasif}
+            onPress={a.git} style={{ marginRight: i < 2 ? 10 : 0 }} />
+        ))}
       </View>
 
     </ScrollView>
@@ -4726,18 +4994,20 @@ function NetHesaplayici({ onGeri }) {
           </View>
         ))}
 
-        <LinearGradient colors={['#4B7BE8', '#2E5BC4']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-          style={{ borderRadius: 18, padding: 18, marginTop: 8, flexDirection: 'row', alignItems: 'center' }}>
+        <View style={{
+          borderRadius: 20, padding: 18, marginTop: 8, flexDirection: 'row', alignItems: 'center',
+          backgroundColor: P.mavi, borderBottomWidth: 6, borderBottomColor: P.maviKoyu,
+        }}>
           <View style={{ flex: 1 }}>
-            <Text style={{ fontFamily: FONT.monoBold, fontSize: 12, color: '#FFFFFFCC', letterSpacing: 1 }}>
-              TOPLAM NET
+            <Text style={{ fontFamily: FONT.govdeKalin, fontSize: 14, color: 'rgba(255,255,255,0.9)' }}>
+              Toplam net
             </Text>
             <Text style={{ fontFamily: FONT.govde, fontSize: 12, color: '#FFFFFFAA', marginTop: 2 }}>
               {toplamMaks} soru üzerinden
             </Text>
           </View>
           <Text style={{ fontFamily: FONT.baslik, fontSize: 34, color: '#FFFFFF' }}>{toplamNet}</Text>
-        </LinearGradient>
+        </View>
       </ScrollView>
     </View>
   );
@@ -4754,6 +5024,20 @@ function NetHesaplayici({ onGeri }) {
 function DenemeSonucAnalizi({ sonuc, onIkinciSans, onDon, premium, onPremiumAc, denemeGecmisi }) {
   const { P, DERSLER } = useTema();
   const kenar = useSafeAreaInsets();
+  const yuksekSkorMu = sonuc.pct >= 90;
+
+  // En zayıf ders — Magic Patterns'ta tasarlanan "Buradan başla" bloğu
+  // için. dersSayac yoksa (eski/eksik veri) sessizce gösterilmez.
+  const enZayifDers = React.useMemo(() => {
+    if (!sonuc.dersSayac) return null;
+    const liste = Object.entries(sonuc.dersSayac).map(([dersId, v]) => ({
+      dersId, dogru: v.dogru || 0, toplam: v.toplam || 0,
+      pct: v.toplam ? Math.round((v.dogru / v.toplam) * 100) : 0,
+    })).filter(d => d.toplam > 0);
+    if (!liste.length) return null;
+    return liste.sort((a, b) => a.pct - b.pct)[0];
+  }, [sonuc.dersSayac]);
+  const enZayifDersBilgi = enZayifDers ? DERSLER.find(d => d.id === enZayifDers.dersId) : null;
 
   const kumeler = React.useMemo(() => {
     const gruplar = {};
@@ -4791,13 +5075,72 @@ function DenemeSonucAnalizi({ sonuc, onIkinciSans, onDon, premium, onPremiumAc, 
 
   return (
     <View style={{ flex: 1, backgroundColor: P.bg }}>
-      <ScrollView contentContainerStyle={{ padding: 22, paddingTop: kenar.top + 30, paddingBottom: kenar.bottom + 24 }}>
-        <Text style={{ fontFamily: FONT.baslik, fontSize: 24, color: P.ink, textAlign: 'center', marginBottom: 4 }}>
-          Deneme Bitti
+      <ScrollView contentContainerStyle={{ padding: 22, paddingTop: kenar.top + 26, paddingBottom: kenar.bottom + 24 }}>
+        <Text style={{ fontFamily: FONT.monoBold, fontSize: 12, color: P.inkFaint, textAlign: 'center', letterSpacing: 1.4, marginBottom: 18 }}>
+          SONUÇ RAPORU
         </Text>
-        <Text style={{ fontFamily: FONT.mono, fontSize: 15, color: P.inkFaint, textAlign: 'center', marginBottom: 24 }}>
-          Net: {sonuc.net} · %{sonuc.pct} doğru
-        </Text>
+
+        {/* Büyük hero gösterge — Magic Patterns'taki katmanlı, parlak
+            halka + yanında Ligo'dan esinlenildi. Yüksek skorda statik
+            "konfeti" noktaları, düşük skorda sadece destekleyici bir ton. */}
+        <View style={{ alignItems: 'center', marginBottom: 22 }}>
+          <View style={{ width: 216, height: 172, alignItems: 'center', justifyContent: 'flex-end', flexDirection: 'row' }}>
+            {yuksekSkorMu && [
+              { top: 4, left: 8, boyut: 8, renk: '#22D3EE' }, { top: 14, right: 4, boyut: 9, renk: '#F472B6' },
+              { top: 66, left: -6, boyut: 6, renk: '#FBBF24' }, { top: -2, left: '48%', boyut: 6, renk: '#A78BFA' },
+              { bottom: 30, right: -6, boyut: 7, renk: '#34D399' },
+            ].map((c, i) => (
+              <View key={i} pointerEvents="none" style={{
+                position: 'absolute', top: c.top, bottom: c.bottom, left: c.left, right: c.right,
+                width: c.boyut, height: c.boyut, borderRadius: c.boyut / 2, backgroundColor: c.renk, opacity: 0.8,
+              }} />
+            ))}
+            <Halka pct={sonuc.pct} boyut={148} kalinlik={13}
+              renk={yuksekSkorMu ? '#7C5CFF' : '#FBBF24'}
+              zemin={P.line}
+              yaziBoyut={40}>
+              <Text style={{ fontFamily: FONT.baslik, fontSize: 40, color: P.ink }}>%{sonuc.pct}</Text>
+            </Halka>
+            {ligoGorsel(yuksekSkorMu ? 'kutlama' : 'mutlu') && (
+              <Image source={ligoGorsel(yuksekSkorMu ? 'kutlama' : 'mutlu')}
+                style={{ width: 78, height: 78, resizeMode: 'contain', marginLeft: -18, marginBottom: 6 }} />
+            )}
+          </View>
+          <Text style={{ fontFamily: FONT.govdeKalin, fontSize: 15, color: P.inkSoft, marginTop: 4 }}>
+            {sonuc.toplam ? `${sonuc.dogru}/${sonuc.toplam} doğru` : `Net: ${sonuc.net}`}
+          </Text>
+        </View>
+
+        {/* Net Hesabı — LGS'nin gerçek puanlama mantığını somutlaştırıyor */}
+        <View style={{ backgroundColor: P.yuzey, borderRadius: 18, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: P.line }}>
+          <Text style={{ fontFamily: FONT.monoBold, fontSize: 11, color: P.inkFaint, letterSpacing: 1, marginBottom: 6 }}>
+            NET HESABI
+          </Text>
+          <Text style={{ fontFamily: FONT.baslik, fontSize: 36, color: P.ink }}>{sonuc.net}</Text>
+          <Text style={{ fontFamily: FONT.govde, fontSize: 13, color: P.inkSoft, marginTop: 8, lineHeight: 19, borderTopWidth: 1, borderTopColor: P.line, paddingTop: 10 }}>
+            LGS'de 3 yanlış 1 doğruyu götürür. Emin olmadığın soruyu boş bırakmak net puanını korur.
+          </Text>
+        </View>
+
+        {/* En zayıf ders — "buradan başla" somut yönlendirmesi */}
+        {enZayifDers && enZayifDersBilgi && (
+          <View style={{ backgroundColor: P.yuzey, borderRadius: 18, padding: 16, marginBottom: 16, borderWidth: 1, borderColor: P.line }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+              <Text style={{ fontFamily: FONT.govdeKalin, fontSize: 15, color: P.ink }}>{enZayifDersBilgi.ad}</Text>
+              <View style={{ backgroundColor: P.altinZemin, borderRadius: 999, paddingHorizontal: 9, paddingVertical: 4 }}>
+                <Text style={{ fontFamily: FONT.monoBold, fontSize: 10, color: P.altin, letterSpacing: 0.4 }}>BURADAN BAŞLA</Text>
+              </View>
+            </View>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <View style={{ flex: 1, height: 8, backgroundColor: P.bgAlt, borderRadius: 999, overflow: 'hidden', marginRight: 10 }}>
+                <View style={{ height: '100%', width: enZayifDers.pct + '%', backgroundColor: enZayifDersBilgi.renk, borderRadius: 999 }} />
+              </View>
+              <Text style={{ fontFamily: FONT.monoBold, fontSize: 13, color: enZayifDersBilgi.renk }}>
+                {enZayifDers.dogru}/{enZayifDers.toplam}
+              </Text>
+            </View>
+          </View>
+        )}
 
         {kumeler.length > 0 && (
           <View style={[st_golge, { backgroundColor: P.yuzey, borderRadius: 18, padding: 18, marginBottom: 16, borderWidth: 1, borderColor: P.red + '40' }]}>
@@ -4915,10 +5258,11 @@ function DenemeEkrani({ srs, denemeGecmisi, premium, onBaslat, onNetHesaplayici,
 
         <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 4 }}>
           <View style={{
-            width: 42, height: 42, borderRadius: 14, backgroundColor: '#E5342526',
+            width: 44, height: 44, borderRadius: 14, backgroundColor: P.kirmizi,
+            borderBottomWidth: 4, borderBottomColor: P.kirmiziKoyu,
             alignItems: 'center', justifyContent: 'center', marginRight: 12,
           }}>
-            <Timer size={22} color="#E53425" strokeWidth={2.2} />
+            <Timer size={23} color="#FFFFFF" strokeWidth={2.6} />
           </View>
           <Text style={{ fontFamily: FONT.baslik, fontSize: 27, color: P.ink }}>Deneme Sınavı</Text>
         </View>
@@ -4928,21 +5272,23 @@ function DenemeEkrani({ srs, denemeGecmisi, premium, onBaslat, onNetHesaplayici,
 
         <TouchableOpacity onPress={() => { titre.hafif(); onNetHesaplayici(); }}
           style={{ flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', marginBottom: 16 }}>
-          <Calculator size={15} color={P.inkFaint} strokeWidth={2.2} />
-          <Text style={{ fontFamily: FONT.govdeKalin, fontSize: 13, color: P.inkFaint, marginLeft: 6 }}>
-            Net Hesaplayıcı — doğru/yanlış gir, netini gör
+          <Calculator size={16} color={P.neon} strokeWidth={2.6} />
+          <Text style={{ fontFamily: FONT.govdeKalin, fontSize: 14, color: P.neon, marginLeft: 6 }}>
+            Net Hesaplayıcı: doğru/yanlış gir, netini gör
           </Text>
         </TouchableOpacity>
 
         {!premium && (
           <View style={{
             flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start',
-            backgroundColor: kalanHak > 0 ? P.bgAlt : '#E5342522',
-            borderRadius: 999, paddingHorizontal: 13, paddingVertical: 7, marginBottom: bonusDenemeHakki > 0 ? 8 : 18,
+            backgroundColor: kalanHak > 0 ? P.yesilZemin : P.kirmiziZemin,
+            borderWidth: 2, borderColor: kalanHak > 0 ? P.yesil + '66' : P.kirmizi + '66',
+            borderBottomWidth: 4, borderBottomColor: kalanHak > 0 ? P.yesil : P.kirmizi,
+            borderRadius: 14, paddingHorizontal: 12, paddingVertical: 7, marginBottom: bonusDenemeHakki > 0 ? 8 : 18,
           }}>
-            <Sparkles size={13} color={kalanHak > 0 ? P.inkFaint : '#E53425'} strokeWidth={2.2} />
+            <Sparkles size={15} color={kalanHak > 0 ? P.yesil : P.kirmizi} strokeWidth={2.6} />
             <Text style={{
-              fontSize: 12, color: kalanHak > 0 ? P.inkSoft : '#E53425', fontFamily: FONT.monoBold, marginLeft: 6,
+              fontSize: 13, color: kalanHak > 0 ? P.yesilKoyu : P.kirmiziKoyu, fontFamily: FONT.govdeKalin, marginLeft: 6,
             }}>
               {kalanHak > 0 ? 'Bu hafta 1 ücretsiz hakkın var' : 'Bu haftaki ücretsiz hakkını kullandın'}
             </Text>
@@ -4952,10 +5298,12 @@ function DenemeEkrani({ srs, denemeGecmisi, premium, onBaslat, onNetHesaplayici,
         {!premium && bonusDenemeHakki > 0 && (
           <View style={{
             flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start',
-            backgroundColor: '#8B5CF622', borderRadius: 999, paddingHorizontal: 13, paddingVertical: 7, marginBottom: 18,
+            backgroundColor: P.morZemin, borderWidth: 2, borderColor: P.mor + '66',
+            borderBottomWidth: 4, borderBottomColor: P.mor,
+            borderRadius: 14, paddingHorizontal: 12, paddingVertical: 7, marginBottom: 18,
           }}>
-            <Users size={13} color="#8B5CF6" strokeWidth={2.2} />
-            <Text style={{ fontSize: 12, color: '#8B5CF6', fontFamily: FONT.monoBold, marginLeft: 6 }}>
+            <Users size={15} color={P.mor} strokeWidth={2.6} />
+            <Text style={{ fontSize: 13, color: P.morKoyu, fontFamily: FONT.govdeKalin, marginLeft: 6 }}>
               +{bonusDenemeHakki} davet bonusu deneme hakkın var
             </Text>
           </View>
@@ -4978,13 +5326,14 @@ function DenemeEkrani({ srs, denemeGecmisi, premium, onBaslat, onNetHesaplayici,
             }}
             style={{
               flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start',
-              backgroundColor: '#F59E0B22', borderRadius: 999, paddingHorizontal: 13, paddingVertical: 8,
+              backgroundColor: P.altin, borderBottomWidth: 4, borderBottomColor: P.altinKoyu,
+              borderRadius: 14, paddingHorizontal: 13, paddingVertical: 9,
               marginBottom: 8, opacity: reklamYukleniyor ? 0.6 : 1,
             }}>
             {reklamYukleniyor
-              ? <ActivityIndicator size="small" color="#F59E0B" />
-              : <PlayCircle size={15} color="#F59E0B" strokeWidth={2.2} />}
-            <Text style={{ fontSize: 13, color: '#F59E0B', fontFamily: FONT.monoBold, marginLeft: 7 }}>
+              ? <ActivityIndicator size="small" color="#FFFFFF" />
+              : <PlayCircle size={17} color="#FFFFFF" strokeWidth={2.6} />}
+            <Text style={{ fontSize: 14, color: '#FFFFFF', fontFamily: FONT.govdeKalin, marginLeft: 7 }}>
               {reklamYukleniyor ? 'Reklam yükleniyor...' : 'Reklam izle, +1 deneme hakkı kazan'}
             </Text>
           </TouchableOpacity>
@@ -4995,11 +5344,14 @@ function DenemeEkrani({ srs, denemeGecmisi, premium, onBaslat, onNetHesaplayici,
 
         {/* ---------- GENEL DENEME — öne çıkan büyük kart ---------- */}
         <TouchableOpacity onPress={() => { titre.orta(); setSecim(null); }} activeOpacity={0.88}
-          style={[st_golge, { borderRadius: 24, overflow: 'hidden', marginBottom: 18 }]}>
-          <LinearGradient colors={['#E53425', '#FF7A45']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+          style={{
+            marginBottom: 18, borderRadius: 24, padding: genelSecili ? 3 : 0,
+            backgroundColor: genelSecili ? P.neon : 'transparent',
+          }}>
+          <View
             style={{
-              padding: 20, flexDirection: 'row', alignItems: 'center', borderRadius: 24,
-              borderWidth: genelSecili ? 3 : 0, borderColor: '#FFFFFF',
+              padding: 20, flexDirection: 'row', alignItems: 'center', borderRadius: 22,
+              backgroundColor: P.kirmizi, borderBottomWidth: 6, borderBottomColor: P.kirmiziKoyu,
             }}>
             <View style={{
               width: 58, height: 58, borderRadius: 18, backgroundColor: '#FFFFFF2A',
@@ -5018,15 +5370,13 @@ function DenemeEkrani({ srs, denemeGecmisi, premium, onBaslat, onNetHesaplayici,
                 width: 30, height: 30, borderRadius: 15, backgroundColor: '#FFFFFF',
                 alignItems: 'center', justifyContent: 'center',
               }}>
-                <Check size={18} color="#E53425" strokeWidth={3.2} />
+                <Check size={18} color={P.kirmizi} strokeWidth={3.4} />
               </View>
             )}
-          </LinearGradient>
+          </View>
         </TouchableOpacity>
 
-        <Text style={{ fontSize: 12, color: P.inkFaint, fontFamily: FONT.monoBold, letterSpacing: 1.2, marginBottom: 10 }}>
-          YA DA TEK BİR DERSTEN ÇALIŞ
-        </Text>
+        <Text style={st.etiket}>Ya da tek bir dersten çalış</Text>
 
         {/* ---------- DERS IZGARASI — her ders kendi renginde büyük kart ---------- */}
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', marginBottom: 20 }}>
@@ -5035,13 +5385,14 @@ function DenemeEkrani({ srs, denemeGecmisi, premium, onBaslat, onNetHesaplayici,
             const secili = secim === d.id;
             return (
               <TouchableOpacity key={d.id} onPress={() => { titre.orta(); setSecim(d.id); }} activeOpacity={0.85}
-                style={[st_golge, {
-                  width: '48%', borderRadius: 20, overflow: 'hidden', marginBottom: 12,
-                }]}>
-                <LinearGradient colors={[d.renk, d.renk + 'CC']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+                style={{
+                  width: '48%', borderRadius: 22, marginBottom: 12,
+                  padding: secili ? 3 : 0, backgroundColor: secili ? P.neon : 'transparent',
+                }}>
+                <View
                   style={{
                     padding: 16, alignItems: 'center', minHeight: 118, borderRadius: 20,
-                    borderWidth: secili ? 3 : 0, borderColor: '#FFFFFF',
+                    backgroundColor: d.gradyan[0], borderBottomWidth: 6, borderBottomColor: d.gradyan[1],
                   }}>
                   {secili && (
                     <View style={{
@@ -5059,8 +5410,8 @@ function DenemeEkrani({ srs, denemeGecmisi, premium, onBaslat, onNetHesaplayici,
                     <DersIkon size={24} color="#FFFFFF" strokeWidth={2.2} />
                   </View>
                   <Text style={{ fontFamily: FONT.govdeKalin, fontSize: 15, color: '#FFFFFF', textAlign: 'center' }}>{d.ad}</Text>
-                  <Text style={{ fontFamily: FONT.mono, fontSize: 11, color: '#FFFFFFCC', marginTop: 3 }}>20 soru · 25 dk</Text>
-                </LinearGradient>
+                  <Text style={{ fontFamily: FONT.govdeKalin, fontSize: 12, color: 'rgba(255,255,255,0.85)', marginTop: 3 }}>20 soru · 25 dk</Text>
+                </View>
               </TouchableOpacity>
             );
           })}
@@ -5069,8 +5420,8 @@ function DenemeEkrani({ srs, denemeGecmisi, premium, onBaslat, onNetHesaplayici,
         <Dugme
           etiket={genelSecili ? 'GENEL DENEMEYİ BAŞLAT' : (secilenDers?.ad.toUpperCase() + ' DENEMESİNİ BAŞLAT')}
           Ikon={Rocket}
-          renk={genelSecili ? '#E53425' : secilenDers?.renk}
-          renkKoyu={genelSecili ? '#B31217' : secilenDers?.renk}
+          renk={genelSecili ? P.kirmizi : secilenDers?.gradyan[0]}
+          renkKoyu={genelSecili ? P.kirmiziKoyu : secilenDers?.gradyan[1]}
           tam
           onPress={() => {
             // Ücretsiz kullanıcı için tek hafta hakkı olduğundan, yanlışlıkla
@@ -5090,9 +5441,7 @@ function DenemeEkrani({ srs, denemeGecmisi, premium, onBaslat, onNetHesaplayici,
 
         {denemeGecmisi && denemeGecmisi.length > 0 && (
           <View style={{ marginTop: 22 }}>
-            <Text style={{ fontSize: 12, color: P.inkFaint, fontFamily: FONT.monoBold, letterSpacing: 1.2, marginBottom: 10 }}>
-              GEÇMİŞ PERFORMANSIN
-            </Text>
+            <Text style={st.etiket}>Geçmiş performansın</Text>
             <View style={st.kart}>
               <DenemeGecmisi gecmis={denemeGecmisi} />
             </View>
@@ -5213,6 +5562,53 @@ function GorselKutuphanesi({ onGeri }) {
   );
 }
 
+// ============================================================
+// DERS DÜĞÜMÜ — Dersler ekranındaki oyun yolunun bir durağı.
+// Büyük, basılabilir 3D yuvarlak (basınca alt kenarı çöker),
+// etrafında dersteki ilerlemeyi gösteren halka.
+// ============================================================
+function DersDugumu({ d, pct, tekrarVar, uniteSayisi, kaydirma, onPress }) {
+  const { P } = useTema();
+  const [basili, setBasili] = useState(false);
+  const DersIkon = d.ikon;
+  return (
+    <View style={{ alignItems: 'center', transform: [{ translateX: kaydirma }] }}>
+      <View style={{ width: 112, height: 112, alignItems: 'center', justifyContent: 'center' }}>
+        <Halka pct={pct} boyut={112} kalinlik={7} renk={d.renk} zemin={P.line}>
+          <TouchableOpacity activeOpacity={1}
+            onPressIn={() => setBasili(true)}
+            onPressOut={() => setBasili(false)}
+            onPress={() => { titre.orta(); onPress && onPress(); }}
+            style={{
+              width: 82, height: 82, borderRadius: 41,
+              backgroundColor: d.gradyan[0],
+              borderBottomWidth: basili ? 2 : 7,
+              borderBottomColor: d.gradyan[1],
+              marginTop: basili ? 5 : 0,
+              alignItems: 'center', justifyContent: 'center',
+            }}>
+            {DersIkon && <DersIkon size={34} color="#FFFFFF" strokeWidth={2.4} />}
+          </TouchableOpacity>
+        </Halka>
+        {tekrarVar && (
+          <View style={{
+            position: 'absolute', top: 2, right: -6,
+            backgroundColor: P.altin, borderRadius: 10,
+            borderBottomWidth: 3, borderBottomColor: P.altinKoyu,
+            paddingHorizontal: 8, paddingVertical: 3,
+          }}>
+            <Text style={{ fontFamily: FONT.govdeKalin, fontSize: 11, color: '#FFFFFF' }}>tekrar</Text>
+          </View>
+        )}
+      </View>
+      <Text style={{ fontFamily: FONT.baslik, fontSize: 16, color: P.ink, marginTop: 6 }}>{d.ad}</Text>
+      <Text style={{ fontFamily: FONT.govdeKalin, fontSize: 12, color: P.inkSoft, marginTop: 1 }}>
+        %{pct} · {uniteSayisi} ünite
+      </Text>
+    </View>
+  );
+}
+
 function DerslerScreen({ srs, onDersVeModBaslat, onGorselKutuphanesi }) {
   const { P, s: st, DERSLER, koyu } = useTema();
   const kenar = useSafeAreaInsets();
@@ -5233,7 +5629,7 @@ function DerslerScreen({ srs, onDersVeModBaslat, onGorselKutuphanesi }) {
       {DERSLER_ARKAPLAN && (
         <>
           <Image source={DERSLER_ARKAPLAN} style={{ position: 'absolute', width: '100%', height: '100%' }} resizeMode="cover" />
-          <View pointerEvents="none" style={{ position: 'absolute', width: '100%', height: '100%', backgroundColor: koyu ? 'rgba(16,18,26,0.72)' : 'rgba(255,255,255,0.55)' }} />
+          <View pointerEvents="none" style={{ position: 'absolute', width: '100%', height: '100%', backgroundColor: koyu ? 'rgba(19,31,43,0.82)' : 'rgba(255,255,255,0.88)' }} />
         </>
       )}
       <ScrollView style={{ flex: 1 }} contentContainerStyle={{ padding: 18, paddingTop: kenar.top + 12, paddingBottom: 28 }}
@@ -5329,9 +5725,7 @@ function DerslerScreen({ srs, onDersVeModBaslat, onGorselKutuphanesi }) {
           </Text>
 
           <TouchableOpacity onPress={() => { titre.orta(); setModSecimi('kart'); }} activeOpacity={0.88}
-            style={[st_golge, { borderRadius: 20, overflow: 'hidden', marginBottom: 14 }]}>
-            <LinearGradient colors={['#4B7BE8', '#2E5BC4']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-              style={{ padding: 20, flexDirection: 'row', alignItems: 'center' }}>
+            style={{ backgroundColor: P.mavi, borderRadius: 20, borderBottomWidth: 6, borderBottomColor: P.maviKoyu, padding: 20, flexDirection: 'row', alignItems: 'center', marginBottom: 14 }}>
               <View style={{ width: 54, height: 54, borderRadius: 17, backgroundColor: '#FFFFFF2A', alignItems: 'center', justifyContent: 'center', marginRight: 15 }}>
                 <BookOpenCheck size={28} color="#FFFFFF" strokeWidth={2.2} />
               </View>
@@ -5342,13 +5736,10 @@ function DerslerScreen({ srs, onDersVeModBaslat, onGorselKutuphanesi }) {
                 </Text>
               </View>
               <ChevronRight size={22} color="#FFFFFFCC" strokeWidth={2.4} />
-            </LinearGradient>
           </TouchableOpacity>
 
           <TouchableOpacity onPress={() => { titre.orta(); setModSecimi('quiz'); }} activeOpacity={0.88}
-            style={[st_golge, { borderRadius: 20, overflow: 'hidden', marginBottom: 20 }]}>
-            <LinearGradient colors={['#8B5CF6', '#5B21B6']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-              style={{ padding: 20, flexDirection: 'row', alignItems: 'center' }}>
+            style={{ backgroundColor: P.mor, borderRadius: 20, borderBottomWidth: 6, borderBottomColor: P.morKoyu, padding: 20, flexDirection: 'row', alignItems: 'center', marginBottom: 20 }}>
               <View style={{ width: 54, height: 54, borderRadius: 17, backgroundColor: '#FFFFFF2A', alignItems: 'center', justifyContent: 'center', marginRight: 15 }}>
                 <Zap size={28} color="#FFFFFF" strokeWidth={2.2} />
               </View>
@@ -5359,7 +5750,6 @@ function DerslerScreen({ srs, onDersVeModBaslat, onGorselKutuphanesi }) {
                 </Text>
               </View>
               <ChevronRight size={22} color="#FFFFFFCC" strokeWidth={2.4} />
-            </LinearGradient>
           </TouchableOpacity>
 
           <TouchableOpacity onPress={() => { titre.hafif(); onGorselKutuphanesi(); }}
@@ -5381,41 +5771,35 @@ function DerslerScreen({ srs, onDersVeModBaslat, onGorselKutuphanesi }) {
             </Text>
           </TouchableOpacity>
 
-          {DERSLER.map(d => {
-            const dk = CARDS.filter(c => c.ders === d.id);
-            const ogr = dk.filter(c => (srs[c.id] || yeniD(c.id)).seviye >= 3).length;
-            const bek = dk.filter(c => (srs[c.id] || yeniD(c.id)).dueAt <= Date.now()).length;
-            const uSayi = uniteler(d.id).length;
-            const dPct = dk.length ? Math.round((ogr / dk.length) * 100) : 0;
-            const DersIkon = d.ikon;
-            return (
-              <TouchableOpacity key={d.id} activeOpacity={0.8}
-                onPress={() => { titre.orta(); onDersVeModBaslat(d.id, modSecimi); }}
-                style={{
-                  flexDirection: 'row', alignItems: 'center',
-                  backgroundColor: d.acik, borderRadius: 18,
-                  padding: 15, marginBottom: 11,
-                }}>
-                <View style={{
-                  width: 44, height: 44, borderRadius: 14, backgroundColor: d.renk,
-                  alignItems: 'center', justifyContent: 'center', marginRight: 14,
-                }}>
-                  <DersIkon size={22} color="#FFFFFF" strokeWidth={2.4} />
+          {/* OYUN YOLU — dersler zikzak bir yol üzerinde; aralarında
+              yolu belirten küçük noktalar. Dokununca seçili modla açılır. */}
+          {(() => {
+            const kaymalar = [0, 72, 96, 72, 0, -72, -96, -72];
+            return DERSLER.map((d, i) => {
+              const dk = CARDS.filter(c => c.ders === d.id);
+              const ogr = dk.filter(c => (srs[c.id] || yeniD(c.id)).seviye >= 3).length;
+              const bek = dk.filter(c => (srs[c.id] || yeniD(c.id)).dueAt <= Date.now()).length;
+              const dPct = dk.length ? Math.round((ogr / dk.length) * 100) : 0;
+              const bu = kaymalar[i % kaymalar.length];
+              const sonraki = kaymalar[(i + 1) % kaymalar.length];
+              return (
+                <View key={d.id}>
+                  <DersDugumu d={d} pct={dPct} tekrarVar={bek > 0} uniteSayisi={uniteler(d.id).length}
+                    kaydirma={bu} onPress={() => onDersVeModBaslat(d.id, modSecimi)} />
+                  {i < DERSLER.length - 1 && (
+                    <View style={{ alignItems: 'center', marginVertical: 8 }}>
+                      {[0.25, 0.5, 0.75].map(k => (
+                        <View key={k} style={{
+                          width: 8, height: 8, borderRadius: 4, backgroundColor: P.line,
+                          marginVertical: 3, transform: [{ translateX: bu + (sonraki - bu) * k }],
+                        }} />
+                      ))}
+                    </View>
+                  )}
                 </View>
-
-                <View style={{ flex: 1 }}>
-                  <Text style={{ fontFamily: FONT.govdeKalin, fontSize: 17, color: P.ink }}>{d.ad}</Text>
-                  <Text style={{ fontFamily: FONT.govde, fontSize: 13, color: d.renk, marginTop: 2 }}>
-                    {uSayi} ünite{bek > 0 ? ' · tekrar zamanı' : ''}
-                  </Text>
-                </View>
-
-                <Halka pct={dPct} boyut={46} kalinlik={4} renk={d.renk} zemin={P.koyu ? 'rgba(255,255,255,0.18)' : 'rgba(16,18,26,0.10)'}>
-                  <Text style={{ fontFamily: FONT.baslik, fontSize: 13, color: d.renk }}>%{dPct}</Text>
-                </Halka>
-              </TouchableOpacity>
-            );
-          })}
+              );
+            });
+          })()}
         </>
       )}
     </ScrollView>
@@ -5432,6 +5816,9 @@ function DerslerScreen({ srs, onDersVeModBaslat, onGorselKutuphanesi }) {
 // Günlük hedefe sayılmaz — o yalnızca quiz ve denemeden dolar.
 // ============================================================
 function KonuCalisma({ kartlar, onBitti }) {
+  // Çalışma paleti seçili temaya uyar: Gece → koyu, Aydınlık/Sepya → açık
+  const { P: _CalismaP } = useTema();
+  const F = _CalismaP.koyu ? FOCUS : CALISMA_ACIK;
   const { DERSLER } = useTema();
   const kenar = useSafeAreaInsets();
   const [idx, setIdx] = useState(0);
@@ -5517,7 +5904,7 @@ function KonuCalisma({ kartlar, onBitti }) {
   const ESIK = 90;
   // Kartın rengi kendi dersinin kimliğine bağlı — Türkçe kırmızımsı,
   // Matematik yeşilimsi vb. Böylece okuma modu da ders rengiyle konuşur.
-  const dersRenk = (DERSLER.find(d => d.id === kart?.ders) || {}).renk || FOCUS.blue;
+  const dersRenk = (DERSLER.find(d => d.id === kart?.ders) || {}).renk || F.blue;
 
   // yon: 1 = ileri (sağa kaydır, kart sağa uçar), -1 = geri (sola
   // kaydır, kart sola uçar). Önceden her iki yön de sadece "ileri"
@@ -5594,30 +5981,30 @@ function KonuCalisma({ kartlar, onBitti }) {
   // ---- TUR BİTTİ ----
   if (!kart) {
     return (
-      <View style={{ flex: 1, backgroundColor: FOCUS.bg, paddingTop: kenar.top, paddingBottom: kenar.bottom }}>
+      <View style={{ flex: 1, backgroundColor: F.bg, paddingTop: kenar.top, paddingBottom: kenar.bottom }}>
         <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 30 }}>
           {ligoGorsel('mutlu') && (
             <Image source={ligoGorsel('mutlu')} style={{ width: 128, height: 128, resizeMode: 'contain', marginBottom: 22 }} />
           )}
-          <Text style={{ fontFamily: FONT.baslik, fontSize: 28, color: FOCUS.text, textAlign: 'center' }}>
+          <Text style={{ fontFamily: FONT.baslik, fontSize: 28, color: F.text, textAlign: 'center' }}>
             Tur tamam
           </Text>
           <Text style={{
-            fontFamily: FONT.govde, fontSize: 17, color: FOCUS.textSoft,
+            fontFamily: FONT.govde, fontSize: 17, color: F.textSoft,
             textAlign: 'center', marginTop: 10, lineHeight: 25,
           }}>
             Bu turu tamamladın.{String.fromCharCode(10)}Quizle kendini test etmeye ne dersin?
           </Text>
           <View style={{ width: '100%', marginTop: 30 }}>
-            <Dugme etiket="BİTİR" renk={FOCUS.green} renkKoyu={FOCUS.greenDark} tam onPress={() => onBitti()} />
+            <Dugme etiket="BİTİR" renk={F.green} renkKoyu={F.greenDark} tam onPress={() => onBitti()} />
             <View style={{ height: 12 }} />
             <TouchableOpacity
               onPress={() => { titre.hafif(); setIdx(0); }}
               style={{
-                borderWidth: 2, borderColor: FOCUS.line, borderRadius: 16,
+                borderWidth: 2, borderColor: F.line, borderRadius: 16,
                 paddingVertical: 14, alignItems: 'center',
               }}>
-              <Text style={{ fontFamily: FONT.monoBold, fontSize: 16, color: FOCUS.textSoft }}>BAŞTAN AL</Text>
+              <Text style={{ fontFamily: FONT.monoBold, fontSize: 16, color: F.textSoft }}>BAŞTAN AL</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -5628,30 +6015,30 @@ function KonuCalisma({ kartlar, onBitti }) {
   const kalan = kartlar.length - idx;
 
   return (
-    <View style={{ flex: 1, backgroundColor: FOCUS.bg, paddingTop: kenar.top, paddingBottom: kenar.bottom }}>
+    <View style={{ flex: 1, backgroundColor: F.bg, paddingTop: kenar.top, paddingBottom: kenar.bottom }}>
 
       {/* Üst şerit */}
       <View style={{
         flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
         paddingHorizontal: 20, paddingVertical: 12,
       }}>
-        <IkonDugme Ikon={XIkon} dolu renk={FOCUS.panel2} renkKoyu={FOCUS.line}
-          ikonRenk={FOCUS.textSoft} onPress={() => onBitti()} boyut={50} ikonBoyut={25} />
+        <IkonDugme Ikon={XIkon} dolu renk={F.panel2} renkKoyu={F.line}
+          ikonRenk={F.textSoft} onPress={() => onBitti()} boyut={50} ikonBoyut={25} />
 
         <View style={{ alignItems: 'center' }}>
-          <Text style={{ fontFamily: FONT.monoBold, fontSize: 14, color: FOCUS.text, letterSpacing: 1.4 }}>
+          <Text style={{ fontFamily: FONT.monoBold, fontSize: 14, color: F.text, letterSpacing: 1.4 }}>
             KONU ÇALIŞMA
           </Text>
         </View>
 
         <View style={{ opacity: idx > 0 ? 1 : 0.3 }}>
-          <IkonDugme Ikon={ChevronLeft} dolu renk={FOCUS.panel2} renkKoyu={FOCUS.line}
-            ikonRenk={FOCUS.text} onPress={geriGel} boyut={50} ikonBoyut={25} />
+          <IkonDugme Ikon={ChevronLeft} dolu renk={F.panel2} renkKoyu={F.line}
+            ikonRenk={F.text} onPress={geriGel} boyut={50} ikonBoyut={25} />
         </View>
       </View>
 
       {/* İlerleme — tek gösterge, sayı yok */}
-      <View style={{ height: 12, backgroundColor: FOCUS.line, marginHorizontal: 20, borderRadius: 999, overflow: 'hidden' }}>
+      <View style={{ height: 12, backgroundColor: F.line, marginHorizontal: 20, borderRadius: 999, overflow: 'hidden' }}>
         <View style={{
           height: '100%', backgroundColor: dersRenk, borderRadius: 999,
           width: (kartlar.length ? ((idx + 1) / kartlar.length) * 100 : 0) + '%',
@@ -5688,14 +6075,14 @@ function KonuCalisma({ kartlar, onBitti }) {
             {kalan > 2 && (
               <View style={{
                 position: 'absolute', left: 14, right: 14, top: 22, bottom: 22,
-                backgroundColor: FOCUS.panel, borderRadius: 26,
-                borderWidth: 2, borderColor: FOCUS.line, opacity: 0.3,
+                backgroundColor: F.panel, borderRadius: 26,
+                borderWidth: 2, borderColor: F.line, opacity: 0.3,
               }} />
             )}
             <View style={{
               position: 'absolute', left: 7, right: 7, top: 11, bottom: 11,
-              backgroundColor: FOCUS.panel, borderRadius: 26,
-              borderWidth: 2, borderColor: FOCUS.line, opacity: 0.55,
+              backgroundColor: F.panel, borderRadius: 26,
+              borderWidth: 2, borderColor: F.line, opacity: 0.55,
             }} />
           </View>
         )}
@@ -5757,8 +6144,8 @@ function KonuCalisma({ kartlar, onBitti }) {
               style={{
                 position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
                 backfaceVisibility: 'hidden', opacity: onOpaklik,
-                backgroundColor: FOCUS.panelKati, borderRadius: 26,
-                borderWidth: 2, borderColor: FOCUS.line,
+                backgroundColor: F.panelKati, borderRadius: 26,
+                borderWidth: 2, borderColor: F.line,
                 padding: 26, paddingTop: 52, justifyContent: 'center',
                 transform: [{ perspective: 1200 }, { rotateY: onKabukDonusu }],
               }}>
@@ -5768,8 +6155,8 @@ function KonuCalisma({ kartlar, onBitti }) {
                     {kart.unite}
                   </Text>
                   {kart.lgsKapsam === false && (
-                    <View style={{ backgroundColor: FOCUS.emberSoft, borderRadius: 7, paddingHorizontal: 8, paddingVertical: 3, marginLeft: 8 }}>
-                      <Text style={{ fontFamily: FONT.monoBold, fontSize: 10, color: FOCUS.ember, letterSpacing: 0.4 }}>
+                    <View style={{ backgroundColor: F.emberSoft, borderRadius: 7, paddingHorizontal: 8, paddingVertical: 3, marginLeft: 8 }}>
+                      <Text style={{ fontFamily: FONT.monoBold, fontSize: 10, color: F.ember, letterSpacing: 0.4 }}>
                         TEKRAR · LGS'DE ÇIKMAZ
                       </Text>
                     </View>
@@ -5777,30 +6164,30 @@ function KonuCalisma({ kartlar, onBitti }) {
                 </View>
 
                 {kart.paragraf && (
-                  <View style={{ backgroundColor: FOCUS.panel2, borderRadius: 12, padding: 12, marginBottom: 10 }}>
-                    <Text style={{ fontSize: 13, fontFamily: FONT.govde, color: FOCUS.textSoft, lineHeight: 19 }} numberOfLines={4}>
+                  <View style={{ backgroundColor: F.panel2, borderRadius: 12, padding: 12, marginBottom: 10 }}>
+                    <Text style={{ fontSize: 13, fontFamily: FONT.govde, color: F.textSoft, lineHeight: 19 }} numberOfLines={4}>
                       {kart.paragraf}
                     </Text>
                   </View>
                 )}
-                <Text style={{ fontFamily: FONT.baslik, fontSize: 25, color: FOCUS.text, lineHeight: 34 }}>
+                <Text style={{ fontFamily: FONT.baslik, fontSize: 25, color: F.text, lineHeight: 34 }}>
                   {kart.soru}
                 </Text>
                 {kart.gorsel && (
                   <Image
                     source={kart.gorsel}
-                    style={{ width: '100%', height: 140, borderRadius: 14, marginTop: 14, backgroundColor: FOCUS.panel2 }}
+                    style={{ width: '100%', height: 140, borderRadius: 14, marginTop: 14, backgroundColor: F.panel2 }}
                     resizeMode="contain"
                   />
                 )}
 
                 <View style={{ position: 'absolute', bottom: -30, left: 0, right: 0, alignItems: 'center' }}>
                   <View style={{
-                    flexDirection: 'row', alignItems: 'center', backgroundColor: FOCUS.panel2,
+                    flexDirection: 'row', alignItems: 'center', backgroundColor: F.panel2,
                     borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8,
                   }}>
-                    <RotateCcw size={14} color={FOCUS.textSoft} strokeWidth={2.2} />
-                    <Text style={{ fontFamily: FONT.monoBold, fontSize: 12, color: FOCUS.textSoft, marginLeft: 6 }}>
+                    <RotateCcw size={14} color={F.textSoft} strokeWidth={2.2} />
+                    <Text style={{ fontFamily: FONT.monoBold, fontSize: 12, color: F.textSoft, marginLeft: 6 }}>
                       Cevabı görmek için dokun
                     </Text>
                   </View>
@@ -5820,7 +6207,7 @@ function KonuCalisma({ kartlar, onBitti }) {
               }}>
               <Animated.View style={{ flex: 1, opacity: arkaIcerikOpaklik }}>
                 <ScrollView
-                  style={{ flex: 1, backgroundColor: FOCUS.panelKati, borderWidth: 2, borderColor: FOCUS.line, borderRadius: 26 }}
+                  style={{ flex: 1, backgroundColor: F.panelKati, borderWidth: 2, borderColor: F.line, borderRadius: 26 }}
                   contentContainerStyle={{ padding: 26, paddingTop: 52, paddingBottom: 52, flexGrow: 1, justifyContent: 'center' }}>
 
                   <View style={{ position: 'absolute', top: 22, left: 26, right: 26 }}>
@@ -5829,22 +6216,22 @@ function KonuCalisma({ kartlar, onBitti }) {
                     </Text>
                   </View>
 
-                  <Text style={{ fontFamily: FONT.govdeKalin, fontSize: 15, color: FOCUS.textSoft, lineHeight: 21, marginBottom: 16 }}>
+                  <Text style={{ fontFamily: FONT.govdeKalin, fontSize: 15, color: F.textSoft, lineHeight: 21, marginBottom: 16 }}>
                     {kart.soru}
                   </Text>
 
-                  <View style={{ backgroundColor: FOCUS.panel2, borderRadius: 18, padding: 20, borderLeftWidth: 4, borderLeftColor: dersRenk }}>
-                    <Text style={{ fontFamily: FONT.monoBold, fontSize: 11, color: FOCUS.textSoft, letterSpacing: 1.2, marginBottom: 8 }}>CEVAP</Text>
-                    <Text style={{ fontFamily: FONT.govdeKalin, fontSize: 21, color: FOCUS.green, lineHeight: 29 }}>{kart.cevap}</Text>
+                  <View style={{ backgroundColor: F.panel2, borderRadius: 18, padding: 20, borderLeftWidth: 4, borderLeftColor: dersRenk }}>
+                    <Text style={{ fontFamily: FONT.monoBold, fontSize: 11, color: F.textSoft, letterSpacing: 1.2, marginBottom: 8 }}>CEVAP</Text>
+                    <Text style={{ fontFamily: FONT.govdeKalin, fontSize: 21, color: F.green, lineHeight: 29 }}>{kart.cevap}</Text>
                   </View>
 
                   {kart.aciklama ? (
-                    <View style={{ marginTop: 16, backgroundColor: FOCUS.emberSoft, borderRadius: 16, borderWidth: 1.5, borderColor: FOCUS.ember + '4D', padding: 16 }}>
+                    <View style={{ marginTop: 16, backgroundColor: F.emberSoft, borderRadius: 16, borderWidth: 1.5, borderColor: F.ember + '4D', padding: 16 }}>
                       <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 7 }}>
-                        <Lightbulb size={17} color={FOCUS.ember} strokeWidth={2.6} />
-                        <Text style={{ fontFamily: FONT.monoBold, fontSize: 12, color: FOCUS.ember, letterSpacing: 1, marginLeft: 7 }}>AÇIKLAMA</Text>
+                        <Lightbulb size={17} color={F.ember} strokeWidth={2.6} />
+                        <Text style={{ fontFamily: FONT.monoBold, fontSize: 12, color: F.ember, letterSpacing: 1, marginLeft: 7 }}>AÇIKLAMA</Text>
                       </View>
-                      <Text style={{ fontFamily: FONT.govde, fontSize: 16, color: FOCUS.text, lineHeight: 24 }}>
+                      <Text style={{ fontFamily: FONT.govde, fontSize: 16, color: F.text, lineHeight: 24 }}>
                         {kart.aciklama}
                       </Text>
                     </View>
@@ -5856,7 +6243,7 @@ function KonuCalisma({ kartlar, onBitti }) {
 
           {/* Alt ipucu */}
           <View style={{ position: 'absolute', bottom: 18, left: 0, right: 0, alignItems: 'center' }} pointerEvents="none">
-            <Text style={{ fontFamily: FONT.govde, fontSize: 13, color: FOCUS.textSoft }}>
+            <Text style={{ fontFamily: FONT.govde, fontSize: 13, color: F.textSoft }}>
               sonraki kart için kaydır
             </Text>
           </View>
@@ -5926,6 +6313,9 @@ function MukemmelOturumLigo() {
 }
 
 function KartModu({ kartlar, mod, onBitti, onUpdate, onGeriAl, srs, sinavMod, sinavSuresi, kartNotlari, onNotKaydet }) {
+  // Çalışma paleti seçili temaya uyar: Gece → koyu, Aydınlık/Sepya → açık
+  const { P: _CalismaP } = useTema();
+  const F = _CalismaP.koyu ? FOCUS : CALISMA_ACIK;
   const kenar = useSafeAreaInsets();
   const [idx, setIdx] = useState(0);
   const [acik, setAcik] = useState(false);
@@ -6181,13 +6571,13 @@ function KartModu({ kartlar, mod, onBitti, onUpdate, onGeriAl, srs, sinavMod, si
   if (!kart || idx >= kartlar.length || erkenBitti) {
     const toplam = Math.min(idx, kartlar.length);
     const pct = toplam > 0 ? Math.round((dogru / toplam) * 100) : 0;
-    const renk = pct >= 80 ? FOCUS.green : pct >= 50 ? FOCUS.ember : FOCUS.red;
+    const renk = pct >= 80 ? F.green : pct >= 50 ? F.ember : F.red;
     return (
-      <View style={{ flex: 1, backgroundColor: FOCUS.bg }}>
+      <View style={{ flex: 1, backgroundColor: F.bg }}>
         {pct === 100 && <Konfeti />}
         {pct === 100 && <MukemmelOturumLigo />}
         <ScrollView contentContainerStyle={{ padding: 24, alignItems: 'center', justifyContent: 'center', flexGrow: 1, paddingTop: kenar.top + 24, paddingBottom: kenar.bottom + 24 }}>
-          <Text style={{ fontFamily: FONT.mono, fontSize: 13, color: FOCUS.textSoft, letterSpacing: 2, marginBottom: 8 }}>
+          <Text style={{ fontFamily: FONT.mono, fontSize: 13, color: F.textSoft, letterSpacing: 2, marginBottom: 8 }}>
             {erkenBitti ? 'OTURUM SONLANDIRILDI' : 'SONUÇ RAPORU'}
           </Text>
           {pct >= 90 ? (
@@ -6198,32 +6588,32 @@ function KartModu({ kartlar, mod, onBitti, onUpdate, onGeriAl, srs, sinavMod, si
           ) : (
             <SayacMetin deger={pct} style={{ fontFamily: FONT.monoBold, fontSize: 58, color: renk }} onEk="%" />
           )}
-          <Text style={{ fontSize: 15, color: FOCUS.textSoft, marginTop: 4, fontFamily: FONT.mono }}>doğruluk oranı</Text>
+          <Text style={{ fontSize: 15, color: F.textSoft, marginTop: 4, fontFamily: FONT.mono }}>doğruluk oranı</Text>
           <View style={{ flexDirection: 'row', width: '100%', marginTop: 32, marginBottom: 28 }}>
-            <View style={{ flex: 1, marginRight: 6, backgroundColor: FOCUS.panel, borderRadius: 8, padding: 14, alignItems: 'center' }}>
-              <Text style={{ fontFamily: FONT.mono, fontSize: 21, color: FOCUS.green }}>{dogru}</Text>
-              <Text style={{ fontSize: 12, color: FOCUS.textSoft, fontFamily: FONT.mono }}>doğru</Text>
+            <View style={{ flex: 1, marginRight: 6, backgroundColor: F.panel, borderRadius: 8, padding: 14, alignItems: 'center' }}>
+              <Text style={{ fontFamily: FONT.mono, fontSize: 21, color: F.green }}>{dogru}</Text>
+              <Text style={{ fontSize: 12, color: F.textSoft, fontFamily: FONT.mono }}>doğru</Text>
             </View>
-            <View style={{ flex: 1, marginHorizontal: 6, backgroundColor: FOCUS.panel, borderRadius: 8, padding: 14, alignItems: 'center' }}>
-              <Text style={{ fontFamily: FONT.mono, fontSize: 21, color: FOCUS.red }}>{toplam - dogru}</Text>
-              <Text style={{ fontSize: 12, color: FOCUS.textSoft, fontFamily: FONT.mono }}>yanlış</Text>
+            <View style={{ flex: 1, marginHorizontal: 6, backgroundColor: F.panel, borderRadius: 8, padding: 14, alignItems: 'center' }}>
+              <Text style={{ fontFamily: FONT.mono, fontSize: 21, color: F.red }}>{toplam - dogru}</Text>
+              <Text style={{ fontSize: 12, color: F.textSoft, fontFamily: FONT.mono }}>yanlış</Text>
             </View>
-            <View style={{ flex: 1, marginLeft: 6, backgroundColor: FOCUS.panel, borderRadius: 8, padding: 14, alignItems: 'center' }}>
-              <Text style={{ fontFamily: FONT.mono, fontSize: 21, color: FOCUS.ember }}>+{xpKazanim}</Text>
-              <Text style={{ fontSize: 12, color: FOCUS.textSoft, fontFamily: FONT.mono }}>xp</Text>
+            <View style={{ flex: 1, marginLeft: 6, backgroundColor: F.panel, borderRadius: 8, padding: 14, alignItems: 'center' }}>
+              <Text style={{ fontFamily: FONT.mono, fontSize: 21, color: F.ember }}>+{xpKazanim}</Text>
+              <Text style={{ fontSize: 12, color: F.textSoft, fontFamily: FONT.mono }}>xp</Text>
             </View>
           </View>
           {/* Gerçek LGS puanlaması: 3 yanlış 1 doğruyu götürür */}
           {sinavMod && toplam > 0 && (
-            <View style={{ width: '100%', backgroundColor: FOCUS.panel, borderRadius: 8, padding: 16, marginBottom: 16 }}>
-              <Text style={{ fontFamily: FONT.mono, fontSize: 12, color: FOCUS.textSoft, letterSpacing: 1.5, marginBottom: 10 }}>NET HESABI</Text>
+            <View style={{ width: '100%', backgroundColor: F.panel, borderRadius: 8, padding: 16, marginBottom: 16 }}>
+              <Text style={{ fontFamily: FONT.mono, fontSize: 12, color: F.textSoft, letterSpacing: 1.5, marginBottom: 10 }}>NET HESABI</Text>
               <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
-                <Text style={{ fontFamily: FONT.monoBold, fontSize: 33, color: FOCUS.ember }}>
+                <Text style={{ fontFamily: FONT.monoBold, fontSize: 33, color: F.ember }}>
                   {(dogru - (toplam - dogru) / 3).toFixed(2)}
                 </Text>
-                <Text style={{ fontSize: 14, color: FOCUS.textSoft, marginLeft: 8, fontFamily: FONT.mono }}>/ {toplam} net</Text>
+                <Text style={{ fontSize: 14, color: F.textSoft, marginLeft: 8, fontFamily: FONT.mono }}>/ {toplam} net</Text>
               </View>
-              <Text style={{ fontSize: 13, color: FOCUS.textSoft, marginTop: 6, fontFamily: FONT.mono, lineHeight: 17 }}>
+              <Text style={{ fontSize: 13, color: F.textSoft, marginTop: 6, fontFamily: FONT.mono, lineHeight: 17 }}>
                 LGS'de 3 yanlış 1 doğruyu götürür.
               </Text>
             </View>
@@ -6231,38 +6621,38 @@ function KartModu({ kartlar, mod, onBitti, onUpdate, onGeriAl, srs, sinavMod, si
 
           {/* Ders bazında kırılım — asıl işe yarayan bilgi */}
           {sinavMod && Object.keys(dersSayac).length > 0 && (
-            <View style={{ width: '100%', backgroundColor: FOCUS.panel, borderRadius: 8, padding: 16, marginBottom: 20 }}>
-              <Text style={{ fontFamily: FONT.mono, fontSize: 12, color: FOCUS.textSoft, letterSpacing: 1.5, marginBottom: 12 }}>DERS BAZINDA</Text>
+            <View style={{ width: '100%', backgroundColor: F.panel, borderRadius: 8, padding: 16, marginBottom: 20 }}>
+              <Text style={{ fontFamily: FONT.mono, fontSize: 12, color: F.textSoft, letterSpacing: 1.5, marginBottom: 12 }}>DERS BAZINDA</Text>
               {Object.keys(dersSayac)
                 .map(id => ({ id, ...dersSayac[id], pct: Math.round((dersSayac[id].dogru / Math.max(1, dersSayac[id].toplam)) * 100) }))
                 .sort((a, b) => a.pct - b.pct)
                 .map(d => {
                   const ad = (DERS_ADLARI[d.id] || d.id);
-                  const renk = d.pct >= 70 ? FOCUS.green : d.pct >= 40 ? FOCUS.ember : FOCUS.red;
+                  const renk = d.pct >= 70 ? F.green : d.pct >= 40 ? F.ember : F.red;
                   return (
                     <View key={d.id} style={{ marginBottom: 10 }}>
                       <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 }}>
-                        <Text style={{ fontSize: 14, color: FOCUS.text, fontFamily: FONT.mono }}>{ad}</Text>
+                        <Text style={{ fontSize: 14, color: F.text, fontFamily: FONT.mono }}>{ad}</Text>
                         <Text style={{ fontSize: 14, color: renk, fontFamily: FONT.monoBold }}>{d.dogru}/{d.toplam} · %{d.pct}</Text>
                       </View>
-                      <View style={{ height: 3, backgroundColor: FOCUS.line }}>
+                      <View style={{ height: 3, backgroundColor: F.line }}>
                         <View style={{ height: '100%', backgroundColor: renk, width: d.pct + '%' }} />
                       </View>
                     </View>
                   );
                 })}
-              <Text style={{ fontSize: 13, color: FOCUS.textSoft, marginTop: 6, fontFamily: FONT.mono, lineHeight: 17 }}>
+              <Text style={{ fontSize: 13, color: F.textSoft, marginTop: 6, fontFamily: FONT.mono, lineHeight: 17 }}>
                 En zayıf ders en üstte. Çalışmaya oradan başla.
               </Text>
             </View>
           )}
 
           <View style={{ width: '100%' }}>
-            <Dugme etiket="DEVAM ET" renk={FOCUS.green} renkKoyu={FOCUS.greenDark}
+            <Dugme etiket="DEVAM ET" renk={F.green} renkKoyu={F.greenDark}
               onPress={() => onBitti(dogru, toplam, dersSayac, yanlisKartlar)} tam />
           </View>
           {sinavMod && kalanSaniye !== null && (
-            <Text style={{ fontSize: 13, color: FOCUS.textSoft, marginTop: 14, fontFamily: FONT.mono }}>
+            <Text style={{ fontSize: 13, color: F.textSoft, marginTop: 14, fontFamily: FONT.mono }}>
               kullanılan süre: {Math.floor((2400 - kalanSaniye) / 60)}:{String((2400 - kalanSaniye) % 60).padStart(2, '0')}
             </Text>
           )}
@@ -6282,7 +6672,7 @@ function KartModu({ kartlar, mod, onBitti, onUpdate, onGeriAl, srs, sinavMod, si
   const kaydirDonus = kaydir.x.interpolate({ inputRange: [-SW, 0, SW], outputRange: ['-9deg', '0deg', '9deg'] });
 
   return (
-    <View style={{ flex: 1, backgroundColor: FOCUS.bg, paddingTop: kenar.top, paddingBottom: kenar.bottom }}>
+    <View style={{ flex: 1, backgroundColor: F.bg, paddingTop: kenar.top, paddingBottom: kenar.bottom }}>
 
       {/* Kombo rozeti — art arda doğru eşiklerinde kısa süreliğine belirir */}
       {komboGoster !== null && (
@@ -6354,26 +6744,26 @@ function KartModu({ kartlar, mod, onBitti, onUpdate, onGeriAl, srs, sinavMod, si
       {/* Kart bazlı kişisel not düzenleme modalı */}
       <Modal visible={notModalAcik} transparent animationType="fade" onRequestClose={() => setNotModalAcik(false)}>
         <View style={{ flex: 1, backgroundColor: 'rgba(8,10,16,0.6)', justifyContent: 'center', padding: 24 }}>
-          <View style={{ backgroundColor: FOCUS.panel, borderRadius: 20, padding: 20 }}>
+          <View style={{ backgroundColor: F.panel, borderRadius: 20, padding: 20 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 12 }}>
-              <StickyNote size={18} color={FOCUS.ember} strokeWidth={2.4} />
-              <Text style={{ fontFamily: FONT.monoBold, fontSize: 14, color: FOCUS.text, marginLeft: 8 }}>
+              <StickyNote size={18} color={F.ember} strokeWidth={2.4} />
+              <Text style={{ fontFamily: FONT.monoBold, fontSize: 14, color: F.text, marginLeft: 8 }}>
                 Kişisel Notun
               </Text>
             </View>
-            <Text style={{ fontFamily: FONT.govde, fontSize: 13, color: FOCUS.textSoft, marginBottom: 12 }}>
+            <Text style={{ fontFamily: FONT.govde, fontSize: 13, color: F.textSoft, marginBottom: 12 }}>
               Bu kartı hatırlamana yardımcı olacak kendi notunu yaz — sadece sen görürsün.
             </Text>
             <TextInput onFocus={() => titre.hafif()}
               value={notTaslak}
               onChangeText={setNotTaslak}
               placeholder="Örn: Bunu hep 3 ile karıştırıyorum çünkü..."
-              placeholderTextColor={FOCUS.textSoft}
+              placeholderTextColor={F.textSoft}
               multiline
               numberOfLines={4}
               style={{
-                backgroundColor: FOCUS.panel2, borderRadius: 14, padding: 14,
-                fontFamily: FONT.govde, fontSize: 14, color: FOCUS.text,
+                backgroundColor: F.panel2, borderRadius: 14, padding: 14,
+                fontFamily: FONT.govde, fontSize: 14, color: F.text,
                 minHeight: 90, textAlignVertical: 'top', marginBottom: 16,
               }}
             />
@@ -6386,11 +6776,11 @@ function KartModu({ kartlar, mod, onBitti, onUpdate, onGeriAl, srs, sinavMod, si
                     setNotModalAcik(false);
                   }}
                   style={{ paddingVertical: 14, paddingHorizontal: 16, marginRight: 8 }}>
-                  <Text style={{ fontFamily: FONT.govdeKalin, fontSize: 14, color: FOCUS.red }}>Sil</Text>
+                  <Text style={{ fontFamily: FONT.govdeKalin, fontSize: 14, color: F.red }}>Sil</Text>
                 </TouchableOpacity>
               )}
               <View style={{ flex: 1 }}>
-                <Dugme etiket="KAYDET" renk={FOCUS.ember} renkKoyu={FOCUS.emberSoft} tam
+                <Dugme etiket="KAYDET" renk={F.ember} renkKoyu={F.emberSoft} tam
                   onPress={() => {
                     if (kartRef.current?.kart?.id) onNotKaydet(kartRef.current.kart.id, notTaslak);
                     setNotModalAcik(false);
@@ -6412,11 +6802,11 @@ function KartModu({ kartlar, mod, onBitti, onUpdate, onGeriAl, srs, sinavMod, si
           {ligoGorsel('uykulu') && (
             <Image source={ligoGorsel('uykulu')} style={{ width: 116, height: 116, resizeMode: 'contain', marginBottom: 20 }} />
           )}
-          <Text style={{ fontFamily: FONT.baslik, fontSize: 26, color: FOCUS.text, textAlign: 'center' }}>
+          <Text style={{ fontFamily: FONT.baslik, fontSize: 26, color: F.text, textAlign: 'center' }}>
             Zorlandın galiba
           </Text>
           <Text style={{
-            fontFamily: FONT.govde, fontSize: 16, color: FOCUS.textSoft,
+            fontFamily: FONT.govde, fontSize: 16, color: F.textSoft,
             textAlign: 'center', marginTop: 10, lineHeight: 24,
           }}>
             Üst üste 5 yanlış yaptın. Bu konu biraz ağır geliyorsa
@@ -6424,16 +6814,16 @@ function KartModu({ kartlar, mod, onBitti, onUpdate, onGeriAl, srs, sinavMod, si
           </Text>
 
           <View style={{ width: '100%', marginTop: 28 }}>
-            <Dugme etiket="DEVAM EDİYORUM" renk={FOCUS.green} renkKoyu={FOCUS.greenDark} tam
+            <Dugme etiket="DEVAM EDİYORUM" renk={F.green} renkKoyu={F.greenDark} tam
               onPress={() => setMolaUyari(false)} />
             <View style={{ height: 12 }} />
             <TouchableOpacity
               onPress={() => { titre.hafif(); setMolaUyari(false); onBitti(dogru, idx, dersSayac, yanlisKartlar); }}
               style={{
-                borderWidth: 2, borderColor: FOCUS.line, borderRadius: 16,
+                borderWidth: 2, borderColor: F.line, borderRadius: 16,
                 paddingVertical: 14, alignItems: 'center',
               }}>
-              <Text style={{ fontFamily: FONT.monoBold, fontSize: 16, color: FOCUS.textSoft }}>
+              <Text style={{ fontFamily: FONT.monoBold, fontSize: 16, color: F.textSoft }}>
                 ANA SAYFAYA DÖN
               </Text>
             </TouchableOpacity>
@@ -6442,16 +6832,16 @@ function KartModu({ kartlar, mod, onBitti, onUpdate, onGeriAl, srs, sinavMod, si
       )}
 
       <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 14 }}>
-        <IkonDugme Ikon={XIkon} dolu renk={FOCUS.panel2} renkKoyu={FOCUS.line}
-          ikonRenk={FOCUS.textSoft} onPress={() => onBitti(dogru, idx, dersSayac, yanlisKartlar)} boyut={50} ikonBoyut={25} />
+        <IkonDugme Ikon={XIkon} dolu renk={F.panel2} renkKoyu={F.line}
+          ikonRenk={F.textSoft} onPress={() => onBitti(dogru, idx, dersSayac, yanlisKartlar)} boyut={50} ikonBoyut={25} />
         <View style={{ alignItems: 'center' }}>
           {sinavMod && dakika !== null ? (
             <>
-              <Text style={{ fontSize: 21, fontFamily: FONT.monoBold, color: zamanAz ? FOCUS.red : FOCUS.ember }}>{dakika}:{String(saniye).padStart(2, '0')}</Text>
+              <Text style={{ fontSize: 21, fontFamily: FONT.monoBold, color: zamanAz ? F.red : F.ember }}>{dakika}:{String(saniye).padStart(2, '0')}</Text>
               <SinavBitkisi oran={idx > 0 ? dogru / idx : 0} />
             </>
           ) : (
-            <Text style={{ fontSize: 13, color: FOCUS.textSoft, fontFamily: FONT.mono, letterSpacing: 1 }}>{isQuiz ? 'QUIZ' : 'KART'} MODU</Text>
+            <Text style={{ fontSize: 13, color: F.textSoft, fontFamily: FONT.mono, letterSpacing: 1 }}>{isQuiz ? 'QUIZ' : 'KART'} MODU</Text>
           )}
 
         </View>
@@ -6459,8 +6849,8 @@ function KartModu({ kartlar, mod, onBitti, onUpdate, onGeriAl, srs, sinavMod, si
           <View style={{ marginRight: 12, opacity: (gecmis.length && geriAlKalan > 0) ? 1 : 0.32 }}>
             <IkonDugme
               Ikon={RotateCcw} dolu
-              renk={FOCUS.panel2} renkKoyu={FOCUS.line}
-              ikonRenk={geriAlKalan > 0 ? FOCUS.text : FOCUS.textSoft}
+              renk={F.panel2} renkKoyu={F.line}
+              ikonRenk={geriAlKalan > 0 ? F.text : F.textSoft}
               onPress={() => gecmis.length && geriAlKalan > 0 && geriAl()}
               boyut={50} ikonBoyut={24}
             />
@@ -6468,28 +6858,28 @@ function KartModu({ kartlar, mod, onBitti, onUpdate, onGeriAl, srs, sinavMod, si
             <View style={{
               position: 'absolute', top: -4, right: -4,
               minWidth: 21, height: 21, borderRadius: 11,
-              backgroundColor: geriAlKalan > 0 ? FOCUS.blue : FOCUS.line,
+              backgroundColor: geriAlKalan > 0 ? F.blue : F.line,
               alignItems: 'center', justifyContent: 'center',
               paddingHorizontal: 5,
-              borderWidth: 2, borderColor: FOCUS.bg,
+              borderWidth: 2, borderColor: F.bg,
             }}>
-              <Text style={{ fontFamily: FONT.monoBold, fontSize: 11, color: '#FFFFFF' }}>{geriAlKalan}</Text>
+              <Text style={{ fontFamily: FONT.monoBold, fontSize: 11, color: geriAlKalan > 0 ? '#FFFFFF' : F.textSoft }}>{geriAlKalan}</Text>
             </View>
           </View>
           {/* Can yerine anlık doğru/yanlış sayacı — cezalandırmadan geri bildirim */}
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <Check size={14} color={FOCUS.green} strokeWidth={2.4} />
-            <Text style={{ fontFamily: FONT.monoBold, fontSize: 13, color: FOCUS.green, marginLeft: 3 }}>{dogru}</Text>
-            <Text style={{ fontFamily: FONT.mono, fontSize: 13, color: FOCUS.line, marginHorizontal: 6 }}>·</Text>
-            <XIkon size={14} color={FOCUS.red} strokeWidth={2.4} />
-            <Text style={{ fontFamily: FONT.monoBold, fontSize: 13, color: FOCUS.red, marginLeft: 3 }}>{idx - dogru}</Text>
+            <Check size={14} color={F.green} strokeWidth={2.4} />
+            <Text style={{ fontFamily: FONT.monoBold, fontSize: 13, color: F.green, marginLeft: 3 }}>{dogru}</Text>
+            <Text style={{ fontFamily: FONT.mono, fontSize: 13, color: F.line, marginHorizontal: 6 }}>·</Text>
+            <XIkon size={14} color={F.red} strokeWidth={2.4} />
+            <Text style={{ fontFamily: FONT.monoBold, fontSize: 13, color: F.red, marginLeft: 3 }}>{idx - dogru}</Text>
           </View>
         </View>
       </View>
 
-      <View style={{ height: 14, backgroundColor: FOCUS.line, marginHorizontal: 20, borderRadius: 999, overflow: 'hidden' }}>
+      <View style={{ height: 14, backgroundColor: F.line, marginHorizontal: 20, borderRadius: 999, overflow: 'hidden' }}>
         <View style={{
-          height: '100%', backgroundColor: FOCUS.green, borderRadius: 999,
+          height: '100%', backgroundColor: F.green, borderRadius: 999,
           width: (kartlar.length ? (idx / kartlar.length) * 100 : 0) + '%',
         }} />
       </View>
@@ -6499,6 +6889,7 @@ function KartModu({ kartlar, mod, onBitti, onUpdate, onGeriAl, srs, sinavMod, si
 
 
         <Animated.View
+          renderToHardwareTextureAndroid
           style={{
             opacity: kartOpak,
             transform: [
@@ -6508,46 +6899,46 @@ function KartModu({ kartlar, mod, onBitti, onUpdate, onGeriAl, srs, sinavMod, si
             ],
           }}>
           <View style={{
-            backgroundColor: FOCUS.panel, borderRadius: 20, padding: 24,
-            borderWidth: 2, borderColor: FOCUS.line,
+            backgroundColor: F.panel, borderRadius: 20, padding: 24,
+            borderWidth: 2, borderColor: F.line,
           }}>
 
             <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
-              <Text style={{ flex: 1, fontFamily: FONT.mono, fontSize: 12, color: FOCUS.ember, letterSpacing: 1 }}>{kart.unite}</Text>
+              <Text style={{ flex: 1, fontFamily: FONT.mono, fontSize: 12, color: F.ember, letterSpacing: 1 }}>{kart.unite}</Text>
               <TouchableOpacity
                 onPress={() => { titre.hafif(); setNotTaslak(kartNotlari?.[kart.id] || ''); setNotModalAcik(true); }}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 style={{ marginRight: kart.lgsKapsam === false ? 8 : 0 }}>
                 <StickyNote
                   size={17}
-                  color={kartNotlari?.[kart.id] ? FOCUS.ember : FOCUS.textSoft}
-                  fill={kartNotlari?.[kart.id] ? FOCUS.emberSoft : 'transparent'}
+                  color={kartNotlari?.[kart.id] ? F.ember : F.textSoft}
+                  fill={kartNotlari?.[kart.id] ? F.emberSoft : 'transparent'}
                   strokeWidth={2.2}
                 />
               </TouchableOpacity>
               {kart.lgsKapsam === false && (
                 <View style={{
-                  backgroundColor: FOCUS.emberSoft, borderRadius: 7,
+                  backgroundColor: F.emberSoft, borderRadius: 7,
                   paddingHorizontal: 8, paddingVertical: 3,
                 }}>
-                  <Text style={{ fontFamily: FONT.monoBold, fontSize: 10, color: FOCUS.ember, letterSpacing: 0.4 }}>
+                  <Text style={{ fontFamily: FONT.monoBold, fontSize: 10, color: F.ember, letterSpacing: 0.4 }}>
                     TEKRAR · LGS'DE ÇIKMAZ
                   </Text>
                 </View>
               )}
             </View>
             {kart.paragraf && (
-              <View style={{ backgroundColor: FOCUS.panel2, borderRadius: 14, padding: 14, marginBottom: 12 }}>
-                <Text style={{ fontSize: 15, fontFamily: FONT.govde, color: FOCUS.textSoft, lineHeight: 22 }}>
+              <View style={{ backgroundColor: F.panel2, borderRadius: 14, padding: 14, marginBottom: 12 }}>
+                <Text style={{ fontSize: 15, fontFamily: FONT.govde, color: F.textSoft, lineHeight: 22 }}>
                   {kart.paragraf}
                 </Text>
               </View>
             )}
-            <Text style={{ fontSize: 18, fontFamily: FONT.serif, color: FOCUS.text, lineHeight: 26 }}>{kart.soru}</Text>
+            <Text style={{ fontSize: 18, fontFamily: FONT.serif, color: F.text, lineHeight: 26 }}>{kart.soru}</Text>
             {kart.gorsel && (
               <Image
                 source={kart.gorsel}
-                style={{ width: '100%', height: 170, borderRadius: 14, marginTop: 14, backgroundColor: FOCUS.panel2 }}
+                style={{ width: '100%', height: 170, borderRadius: 14, marginTop: 14, backgroundColor: F.panel2 }}
                 resizeMode="contain"
               />
             )}
@@ -6558,10 +6949,10 @@ function KartModu({ kartlar, mod, onBitti, onUpdate, onGeriAl, srs, sinavMod, si
                   const dogruMu = sec === kart.cevap;
                   const secildi = sec === secilen;
                   // Cevap açılmadan önce nötr; açılınca doğru yeşil, seçilen yanlış kırmızı
-                  const cerceve = !acik ? FOCUS.line : (dogruMu ? FOCUS.green : (secildi ? FOCUS.red : FOCUS.line));
-                  const altCerceve = !acik ? FOCUS.line : (dogruMu ? FOCUS.greenDark : (secildi ? FOCUS.redDark : FOCUS.line));
-                  const zemin = !acik ? FOCUS.panel2 : (dogruMu ? '#1E3A1A' : (secildi ? '#3B2226' : FOCUS.panel2));
-                  const yazi = !acik ? FOCUS.text : (dogruMu ? FOCUS.green : (secildi ? FOCUS.red : FOCUS.textSoft));
+                  const cerceve = !acik ? F.line : (dogruMu ? F.green : (secildi ? F.red : F.line));
+                  const altCerceve = !acik ? F.line : (dogruMu ? F.greenDark : (secildi ? F.redDark : F.line));
+                  const zemin = !acik ? F.panel2 : (dogruMu ? '#1E3A1A' : (secildi ? '#3B2226' : F.panel2));
+                  const yazi = !acik ? F.text : (dogruMu ? F.green : (secildi ? F.red : F.textSoft));
 
                   return (
                     <TouchableOpacity key={i} disabled={acik} activeOpacity={0.85}
@@ -6590,8 +6981,8 @@ function KartModu({ kartlar, mod, onBitti, onUpdate, onGeriAl, srs, sinavMod, si
                         </Text>
                       </View>
                       <Text style={{ flex: 1, fontSize: 16, color: yazi, fontFamily: FONT.govdeOrta, lineHeight: 22 }}>{sec}</Text>
-                      {acik && dogruMu && <Check size={20} color={FOCUS.green} strokeWidth={3} />}
-                      {acik && secildi && !dogruMu && <XIkon size={20} color={FOCUS.red} strokeWidth={3} />}
+                      {acik && dogruMu && <Check size={20} color={F.green} strokeWidth={3} />}
+                      {acik && secildi && !dogruMu && <XIkon size={20} color={F.red} strokeWidth={3} />}
                     </TouchableOpacity>
                   );
                 })}
@@ -6599,19 +6990,19 @@ function KartModu({ kartlar, mod, onBitti, onUpdate, onGeriAl, srs, sinavMod, si
                 {/* Çözüm açıklaması — yalnızca yanlış cevaptan sonra */}
                 {acik && secilen !== kart.cevap && kart.aciklama && (
                   <View style={{
-                    marginTop: 6, backgroundColor: FOCUS.emberSoft,
-                    borderRadius: 16, borderWidth: 1.5, borderColor: FOCUS.ember + '55',
+                    marginTop: 6, backgroundColor: F.emberSoft,
+                    borderRadius: 16, borderWidth: 1.5, borderColor: F.ember + '55',
                     padding: 15,
                   }}>
                     <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
-                      <Lightbulb size={18} color={FOCUS.ember} strokeWidth={2.6} />
+                      <Lightbulb size={18} color={F.ember} strokeWidth={2.6} />
                       <Text style={{
-                        fontFamily: FONT.monoBold, fontSize: 13, color: FOCUS.ember,
+                        fontFamily: FONT.monoBold, fontSize: 13, color: F.ember,
                         letterSpacing: 1, marginLeft: 7,
                       }}>NEDEN?</Text>
                     </View>
                     <Text style={{
-                      fontSize: 16, color: FOCUS.text,
+                      fontSize: 16, color: F.text,
                       fontFamily: FONT.govde, lineHeight: 24,
                     }}>{kart.aciklama}</Text>
                   </View>
@@ -6622,19 +7013,19 @@ function KartModu({ kartlar, mod, onBitti, onUpdate, onGeriAl, srs, sinavMod, si
             {/* Kart modunda da açıklama varsa göster */}
             {!isQuiz && acik && kart.aciklama && (
               <View style={{
-                marginTop: 14, backgroundColor: FOCUS.emberSoft,
-                borderRadius: 16, borderWidth: 1.5, borderColor: FOCUS.ember + '55',
+                marginTop: 14, backgroundColor: F.emberSoft,
+                borderRadius: 16, borderWidth: 1.5, borderColor: F.ember + '55',
                 padding: 15,
               }}>
                 <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 8 }}>
-                  <Lightbulb size={18} color={FOCUS.ember} strokeWidth={2.6} />
+                  <Lightbulb size={18} color={F.ember} strokeWidth={2.6} />
                   <Text style={{
-                    fontFamily: FONT.monoBold, fontSize: 13, color: FOCUS.ember,
+                    fontFamily: FONT.monoBold, fontSize: 13, color: F.ember,
                     letterSpacing: 1, marginLeft: 7,
                   }}>NEDEN?</Text>
                 </View>
                 <Text style={{
-                  fontSize: 16, color: FOCUS.text,
+                  fontSize: 16, color: F.text,
                   fontFamily: FONT.govde, lineHeight: 24,
                 }}>{kart.aciklama}</Text>
               </View>
@@ -6660,7 +7051,7 @@ function KartModu({ kartlar, mod, onBitti, onUpdate, onGeriAl, srs, sinavMod, si
               style={{ width: 20, height: 20, resizeMode: 'contain', marginRight: 6, transform: [{ scale: ligoPopOlcek }] }}
             />
           ) : null}
-          <Text style={{ fontFamily: FONT.mono, fontSize: 13, color: FOCUS.ember, textAlign: 'center' }}>+{xpKazanim} XP</Text>
+          <Text style={{ fontFamily: FONT.mono, fontSize: 13, color: F.ember, textAlign: 'center' }}>+{xpKazanim} XP</Text>
         </View>
       </ScrollView>
     </View>
@@ -7132,29 +7523,107 @@ function UniteAnalizi({ srs, uniteGecmisi, premium, onPremiumAc }) {
 // ============ İSTATİSTİK ============
 function RozetRow({ istatistikler }) {
   const { P } = useTema();
+  // Varsayılan olarak en son/ilk açık rozeti öne çıkar; hiçbiri açık
+  // değilse ilk rozeti gösterip "nasıl açılır" ipucunu verir.
+  const acikRozetler = React.useMemo(() => ROZETLER.filter(r => r.kosul(istatistikler)), [istatistikler]);
+  const [seciliId, setSeciliId] = useState((acikRozetler[acikRozetler.length - 1] || ROZETLER[0]).id);
+  const secili = ROZETLER.find(r => r.id === seciliId) || ROZETLER[0];
+  const seciliAcikMi = secili.kosul(istatistikler);
+  const SeciliIkon = secili.ikon;
+
   return (
-    <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
-      {ROZETLER.map(r => {
-        const acik = r.kosul(istatistikler);
-        const RozetIkon = r.ikon;
-        return (
-          <View key={r.id} style={{ width: '33.33%', alignItems: 'center', marginBottom: 14 }}>
-            <View style={{
-              width: 48, height: 48, borderRadius: 14,
-              alignItems: 'center', justifyContent: 'center',
-              backgroundColor: acik ? P.vurguZemin : P.bgAlt,
-            }}>
-              <RozetIkon size={24} color={acik ? P.red : P.inkFaint} strokeWidth={2} opacity={acik ? 1 : 0.4} />
-            </View>
-            <Text style={{ fontSize: 12, fontFamily: FONT.govdeKalin, color: acik ? P.ink : P.inkFaint, marginTop: 7, textAlign: 'center' }}>{r.ad}</Text>
+    <View>
+      {/* Öne çıkan büyük kart — Magic Patterns'taki "seçili rozet"
+          bloğundan esinlenildi. Izgaradan bir rozete dokununca burası
+          güncelleniyor; kilitliyse ipucu, açıksa "kazanıldı" gösteriyor. */}
+      <View style={{
+        flexDirection: 'row', alignItems: 'center', backgroundColor: P.yuzey,
+        borderRadius: 18, padding: 14, marginBottom: 18,
+        borderWidth: 1, borderColor: seciliAcikMi ? P.altin + '40' : P.line,
+      }}>
+        <View style={{
+          width: 62, height: 62, borderRadius: 18, alignItems: 'center', justifyContent: 'center', marginRight: 13,
+          backgroundColor: seciliAcikMi ? P.altinZemin : P.bgAlt,
+        }}>
+          <SeciliIkon size={30} color={seciliAcikMi ? P.altin : P.inkFaint} strokeWidth={2} opacity={seciliAcikMi ? 1 : 0.5} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={{ fontFamily: FONT.baslik, fontSize: 17, color: P.ink }} numberOfLines={1}>{secili.ad}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 3 }}>
+            {seciliAcikMi ? (
+              <>
+                <CircleCheckBig size={13} color={P.altin} strokeWidth={2.6} />
+                <Text style={{ fontFamily: FONT.govdeKalin, fontSize: 12, color: P.altin, marginLeft: 5 }}>Kazanıldı</Text>
+              </>
+            ) : (
+              <>
+                <Lock size={12} color={P.inkFaint} strokeWidth={2.4} />
+                <Text style={{ fontFamily: FONT.govde, fontSize: 12, color: P.inkFaint, marginLeft: 5 }}>Henüz kilitli</Text>
+              </>
+            )}
           </View>
-        );
-      })}
+        </View>
+      </View>
+
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
+        {ROZETLER.map(r => {
+          const acik = r.kosul(istatistikler);
+          const RozetIkon = r.ikon;
+          const buSecili = r.id === seciliId;
+          return (
+            <TouchableOpacity key={r.id} onPress={() => { titre.hafif(); setSeciliId(r.id); }}
+              style={{ width: '33.33%', alignItems: 'center', marginBottom: 14 }}>
+              <View style={{
+                width: 48, height: 48, borderRadius: 14,
+                alignItems: 'center', justifyContent: 'center',
+                backgroundColor: acik ? P.vurguZemin : P.bgAlt,
+                borderWidth: buSecili ? 2 : 0, borderColor: P.altin,
+              }}>
+                <RozetIkon size={24} color={acik ? P.red : P.inkFaint} strokeWidth={2} opacity={acik ? 1 : 0.4} />
+              </View>
+              <Text style={{ fontSize: 12, fontFamily: FONT.govdeKalin, color: acik ? P.ink : P.inkFaint, marginTop: 7, textAlign: 'center' }}>{r.ad}</Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
     </View>
   );
 }
 
 // Bu haftanın (Pazartesi'den bugüne) özet istatistiklerini çıkarır.
+// Akıllı Zayıf Konu Takibi — bu haftaki (Pazartesi'den bugüne) günlük
+// zorlanma sayaçlarını toplayıp en çok yanlış yapılan üniteyi bulur.
+// haftalikOzetHesapla ile aynı hafta penceresini kullanır ama ayrı
+// tutuldu — mevcut fonksiyonu bozmadan eklenebilsin diye.
+function enCokZorlananKonuHesapla(gunlukZorlanma) {
+  const simdi = new Date();
+  const gun = (simdi.getDay() + 6) % 7;
+  const pazartesi = new Date(simdi);
+  pazartesi.setDate(simdi.getDate() - gun);
+  pazartesi.setHours(0, 0, 0, 0);
+
+  const gunAnahtarlari = [];
+  for (let i = 0; i < 7; i++) {
+    const t = new Date(pazartesi);
+    t.setDate(pazartesi.getDate() + i);
+    gunAnahtarlari.push(t.toISOString().split('T')[0]);
+  }
+
+  const uniteToplam = {};
+  gunAnahtarlari.forEach(k => {
+    const g = (gunlukZorlanma || {})[k] || {};
+    Object.entries(g).forEach(([anahtar, sayi]) => {
+      uniteToplam[anahtar] = (uniteToplam[anahtar] || 0) + sayi;
+    });
+  });
+
+  const siraliListe = Object.entries(uniteToplam).sort((a, b) => b[1] - a[1]);
+  if (!siraliListe.length) return null;
+  const [enYuksekAnahtar, sayi] = siraliListe[0];
+  const [ders, unite] = enYuksekAnahtar.split('|');
+  return { ders, unite, sayi };
+}
+
 function haftalikOzetHesapla(gunluk, gunlukDers, denemeGecmisi, seri) {
   const simdi = new Date();
   const gun = (simdi.getDay() + 6) % 7;
@@ -7196,7 +7665,7 @@ function haftalikOzetHesapla(gunluk, gunlukDers, denemeGecmisi, seri) {
 // HAFTALIK ÖZET — Spotify Wrapped tarzı, renkli kartlar halinde
 // bu haftanın çalışma özetini gösterir.
 // ============================================================
-function HaftalikOzet({ gunluk, gunlukDers, denemeGecmisi, seri, onKapat }) {
+function HaftalikOzet({ gunluk, gunlukDers, gunlukZorlanma, denemeGecmisi, seri, onKapat }) {
   const { P, DERSLER } = useTema();
   const kenar = useSafeAreaInsets();
   const veri = React.useMemo(
@@ -7204,14 +7673,61 @@ function HaftalikOzet({ gunluk, gunlukDers, denemeGecmisi, seri, onKapat }) {
     [gunluk, gunlukDers, denemeGecmisi, seri]
   );
   const ders = DERSLER.find(d => d.id === veri.enCokDers);
+  // Akıllı Zayıf Konu Takibi — bu hafta en çok yanlış yapılan ünite
+  const zayifKonu = React.useMemo(
+    () => enCokZorlananKonuHesapla(gunlukZorlanma),
+    [gunlukZorlanma]
+  );
+  const zayifDers = zayifKonu ? DERSLER.find(d => d.id === zayifKonu.ders) : null;
+
+  // Haftalık Özeti Paylaşma — veliler/arkadaşlar için sosyal medyaya
+  // (Instagram/WhatsApp) paylaşılabilecek görsel bir kart oluşturur.
+  // Aynı graceful-degradation deseni: paket yoksa düz metne düşer,
+  // hiçbir zaman çökmez.
+  const gorselRef = useRef(null);
+  const [paylasiliyor, setPaylasiliyor] = useState(false);
+  const ozetPaylas = async () => {
+    if (paylasiliyor) return;
+    setPaylasiliyor(true);
+    try {
+      const { captureRef } = require('react-native-view-shot');
+      const Sharing = require('expo-sharing');
+      const uri = await captureRef(gorselRef, { format: 'png', quality: 1 });
+      const kullanilabilir = await Sharing.isAvailableAsync();
+      if (kullanilabilir) {
+        await Sharing.shareAsync(uri, { mimeType: 'image/png', dialogTitle: 'Haftalık özetimi paylaş' });
+      } else {
+        throw new Error('Paylaşım kullanılamıyor');
+      }
+    } catch (e) {
+      const metin = `Bu hafta Ligo LGS Cepte'de ${veri.toplamKart} kart çözdüm, ${veri.aktifGun}/7 gün çalıştım ve ${veri.seri} günlük serim var! 💪🎯`;
+      Share.share({ message: metin }).catch(() => {});
+    } finally {
+      setPaylasiliyor(false);
+    }
+  };
 
   return (
     <View style={{ flex: 1, backgroundColor: FOCUS.bg }}>
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: kenar.bottom + 30 }}>
-        <Text style={{ fontFamily: FONT.baslik, fontSize: 30, color: FOCUS.text, marginBottom: 4 }}>Bu Haftan</Text>
-        <Text style={{ fontFamily: FONT.govde, fontSize: 15, color: FOCUS.textSoft, marginBottom: 24 }}>
-          Pazartesi'den bugüne neler yaptın
-        </Text>
+        <View style={{ flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 4 }}>
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontFamily: FONT.baslik, fontSize: 30, color: FOCUS.text }}>Bu Haftan</Text>
+            <Text style={{ fontFamily: FONT.govde, fontSize: 15, color: FOCUS.textSoft, marginTop: 4 }}>
+              Pazartesi'den bugüne neler yaptın
+            </Text>
+          </View>
+          <TouchableOpacity onPress={ozetPaylas} disabled={paylasiliyor}
+            style={{
+              width: 44, height: 44, borderRadius: 14, backgroundColor: FOCUS.panel2,
+              alignItems: 'center', justifyContent: 'center', marginLeft: 12,
+            }}>
+            {paylasiliyor
+              ? <ActivityIndicator size="small" color={FOCUS.text} />
+              : <Share2 size={19} color={FOCUS.text} strokeWidth={2} />}
+          </TouchableOpacity>
+        </View>
+        <View style={{ height: 20 }} />
 
         <View style={[st_golge, { borderRadius: 22, overflow: 'hidden', marginBottom: 14 }]}>
           <LinearGradient colors={['#4776E6', '#8E54E9']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ padding: 26, alignItems: 'center' }}>
@@ -7243,6 +7759,18 @@ function HaftalikOzet({ gunluk, gunlukDers, denemeGecmisi, seri, onKapat }) {
           </View>
         )}
 
+        {zayifKonu && zayifDers && (
+          <View style={[st_golge, { borderRadius: 22, overflow: 'hidden', marginBottom: 14 }]}>
+            <LinearGradient colors={['#8E2DE2', '#4A00E0']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ padding: 26, alignItems: 'center' }}>
+              <Text style={{ fontFamily: FONT.govdeKalin, fontSize: 12, color: '#FFFFFFCC', letterSpacing: 1.2 }}>EN ÇOK ZORLANDIĞIN KONU</Text>
+              <Text style={{ fontFamily: FONT.baslik, fontSize: 26, color: '#FFFFFF', marginTop: 8, textAlign: 'center' }}>{zayifKonu.unite}</Text>
+              <Text style={{ fontFamily: FONT.govde, fontSize: 14, color: '#FFFFFFCC', marginTop: 4 }}>
+                {zayifDers.ad} · kart çalışırken {zayifKonu.sayi} kez yanlış
+              </Text>
+            </LinearGradient>
+          </View>
+        )}
+
         {veri.enIyiDeneme !== null && (
           <View style={[st_golge, { borderRadius: 22, overflow: 'hidden', marginBottom: 14 }]}>
             <LinearGradient colors={['#E52D27', '#B31217']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ padding: 26, alignItems: 'center' }}>
@@ -7263,6 +7791,65 @@ function HaftalikOzet({ gunluk, gunlukDers, denemeGecmisi, seri, onKapat }) {
           </LinearGradient>
         </View>
       </ScrollView>
+
+      {/* Ekran dışı, sadece görsel yakalama için render edilen paylaşım
+          kartı — Instagram Story oranına (9:16) yakın, 320x568. */}
+      <View style={{ position: 'absolute', left: -9999, top: 0 }} pointerEvents="none">
+        <View ref={gorselRef} collapsable={false} style={{ width: 320, height: 568 }}>
+          <LinearGradient
+            colors={['#182049', '#1B2452']}
+            start={{ x: 0.1, y: 0 }} end={{ x: 0.9, y: 1 }}
+            style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 28, overflow: 'hidden' }}
+          >
+            <View style={{
+              position: 'absolute', top: -80, left: -60, width: 220, height: 220,
+              borderRadius: 110, backgroundColor: '#4776E630',
+            }} />
+            <View style={{
+              position: 'absolute', bottom: -90, right: -70, width: 240, height: 240,
+              borderRadius: 120, backgroundColor: '#8E54E922',
+            }} />
+
+            {ligoGorsel('mutlu') && (
+              <Image source={ligoGorsel('mutlu')} style={{ width: 110, height: 110, resizeMode: 'contain', marginBottom: 18 }} />
+            )}
+
+            <Text style={{ fontFamily: FONT.monoBold, fontSize: 13, color: '#8E9BFF', letterSpacing: 2, marginBottom: 8 }}>
+              HAFTALIK ÖZET
+            </Text>
+            <Text style={{ fontFamily: FONT.baslik, fontSize: 44, color: '#FFFFFF' }}>{veri.toplamKart}</Text>
+            <Text style={{ fontFamily: FONT.govdeKalin, fontSize: 15, color: '#FFFFFFCC', marginTop: 2, marginBottom: 20 }}>kart çözdüm</Text>
+
+            <View style={{ flexDirection: 'row', marginBottom: 24 }}>
+              {[
+                { v: `${veri.aktifGun}/7`, l: 'GÜN ÇALIŞTIM' },
+                { v: veri.seri, l: 'GÜNLÜK SERİ' },
+              ].map((it) => (
+                <View key={it.l} style={{
+                  alignItems: 'center', marginHorizontal: 10,
+                  backgroundColor: 'rgba(255,255,255,0.08)',
+                  borderWidth: 1, borderColor: 'rgba(255,255,255,0.18)',
+                  borderRadius: 16, paddingVertical: 14, paddingHorizontal: 18,
+                }}>
+                  <Text style={{ fontFamily: FONT.baslik, fontSize: 20, color: '#8E9BFF' }}>{it.v}</Text>
+                  <Text style={{ fontFamily: FONT.govdeKalin, fontSize: 9, color: 'rgba(255,255,255,0.6)', marginTop: 2 }}>{it.l}</Text>
+                </View>
+              ))}
+            </View>
+
+            {ders && (
+              <Text style={{ fontFamily: FONT.govde, fontSize: 13, color: 'rgba(255,255,255,0.65)', textAlign: 'center', marginBottom: 20 }}>
+                En çok çalıştığım ders: {ders.ad}
+              </Text>
+            )}
+
+            <Text style={{ fontFamily: FONT.baslik, fontSize: 16, color: '#FFFFFF' }}>Ligo LGS Cepte</Text>
+            <Text style={{ fontFamily: FONT.govde, fontSize: 12, color: 'rgba(255,255,255,0.5)', marginTop: 3 }}>
+              LGS'ye Ligo ile hazırlan
+            </Text>
+          </LinearGradient>
+        </View>
+      </View>
     </View>
   );
 }
@@ -7272,7 +7859,7 @@ function ProfilScreen(props) {
     srs, xp, seri, profil, setProfil, sinavSayisi, enIyiSinavPct,
     hedefKart, setHedefKart, sinavTarihi, setSinavTarihi,
     bildirimAcik, setBildirimAcik, bildirimSaat, setBildirimSaat,
-    gunluk, gunlukDers, denemeGecmisi, onVeriDegisti, hesapVarMi, premium, onPremiumAc, sesAcik, setSesAcik,
+    gunluk, gunlukDers, gunlukZorlanma, denemeGecmisi, onVeriDegisti, hesapVarMi, premium, onPremiumAc, sesAcik, setSesAcik,
     uniteGecmisi, gelecekMektup, setGelecekMektup, davetSayisiGorulen, onDavetKullanildi,
     grupKodu, setGrupKodu, onRecapAc,
   } = props;
@@ -7314,13 +7901,14 @@ function ProfilScreen(props) {
             bildirimSaat={bildirimSaat} setBildirimSaat={setBildirimSaat}
             premium={premium} onPremiumAc={onPremiumAc}
             sesAcik={sesAcik} setSesAcik={setSesAcik}
+            haftalikPlan={haftalikPlan} setHaftalikPlan={setHaftalikPlan}
             basliksiz
           />
         ) : altSayfa === 'liderlik' ? (
           <LiderlikEkrani profil={profil} setProfil={setProfil} hesapVarMi={hesapVarMi} premium={premium}
             grupKodu={grupKodu} onGrupKoduDegisti={setGrupKodu} />
         ) : altSayfa === 'ozet' ? (
-          <HaftalikOzet gunluk={gunluk || {}} gunlukDers={gunlukDers || {}} denemeGecmisi={denemeGecmisi} seri={seri} onKapat={() => setAltSayfa(null)} />
+          <HaftalikOzet gunluk={gunluk || {}} gunlukDers={gunlukDers || {}} gunlukZorlanma={gunlukZorlanma || {}} denemeGecmisi={denemeGecmisi} seri={seri} onKapat={() => setAltSayfa(null)} />
         ) : altSayfa === 'mektup' ? (
           <GelecekMektupEkrani
             mektup={gelecekMektup} onKaydet={setGelecekMektup} sinavTarihi={sinavTarihi} />
@@ -7362,10 +7950,11 @@ function ProfilScreen(props) {
         <TouchableOpacity onPress={() => { titre.hafif(); setAltSayfa('ayarlar'); }}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           style={{
-            width: 40, height: 40, borderRadius: 14, backgroundColor: P.bgAlt,
+            width: 42, height: 42, borderRadius: 14, backgroundColor: P.yuzey,
+            borderWidth: 2, borderColor: P.line, borderBottomWidth: 4, borderBottomColor: P.lineKoyu,
             alignItems: 'center', justifyContent: 'center',
           }}>
-          <Settings size={20} color={P.inkSoft} strokeWidth={2.1} />
+          <Settings size={20} color={P.inkSoft} strokeWidth={2.4} />
         </TouchableOpacity>
       </View>
 
@@ -7373,26 +7962,29 @@ function ProfilScreen(props) {
 
       {/* ---------- HAFTALIK ÖZETİM: takibi kolay olsun diye en üstte ---------- */}
       <TouchableOpacity onPress={() => { titre.hafif(); setAltSayfa('ozet'); }} activeOpacity={0.85}
-        style={[{ borderRadius: 18, overflow: 'hidden', marginBottom: 14 }, st_golge]}>
-        <LinearGradient colors={['#B8860B', '#FFD966']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-          style={{ flexDirection: 'row', alignItems: 'center', padding: 15 }}>
+        style={{
+          flexDirection: 'row', alignItems: 'center', padding: 15, marginBottom: 14,
+          borderRadius: 20, backgroundColor: P.altin, borderBottomWidth: 5, borderBottomColor: P.altinKoyu,
+        }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
           <View style={{
             width: 40, height: 40, borderRadius: 13, backgroundColor: '#FFFFFF33',
             alignItems: 'center', justifyContent: 'center', marginRight: 12,
           }}>
             <Sparkles size={20} color="#FFFFFF" strokeWidth={2.2} />
           </View>
-          <Text style={{ flex: 1, fontFamily: FONT.govdeKalin, fontSize: 15, color: '#FFFFFF' }}>Haftalık Özetim</Text>
-          <ChevronRight size={20} color="#FFFFFFCC" strokeWidth={2.4} />
-        </LinearGradient>
+          <Text style={{ flex: 1, fontFamily: FONT.baslik, fontSize: 17, color: '#FFFFFF' }}>Haftalık Özetim</Text>
+          <ChevronRight size={22} color="#FFFFFF" strokeWidth={2.8} />
+        </View>
       </TouchableOpacity>
 
       {/* ---------- KÜNYE: kompakt tek satır (eskisinin ~1/3'ü) ---------- */}
-      <View style={[{ borderRadius: 18, overflow: 'hidden', marginBottom: 14 }, st_golge]}>
-        <LinearGradient
-          colors={premium ? ['#B8860B', '#FFD966'] : [sev.renk, sev.renk]}
-          start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-          style={{ flexDirection: 'row', alignItems: 'center', padding: 14 }}>
+      <View style={{
+        borderRadius: 20, overflow: 'hidden', marginBottom: 14,
+        backgroundColor: premium ? P.altin : sev.renk,
+        borderBottomWidth: 5, borderBottomColor: premium ? P.altinKoyu : sev.renkKoyu,
+      }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', padding: 15 }}>
           {premium && <HolografikParilti boyut={220} />}
           <View style={{
             width: 44, height: 44, borderRadius: 14, backgroundColor: '#FFFFFF33',
@@ -7402,8 +7994,8 @@ function ProfilScreen(props) {
           </View>
           <View style={{ flex: 1 }}>
             <Text style={{ fontFamily: FONT.baslik, fontSize: 17, color: '#FFFFFF' }}>{sev.ad}</Text>
-            <View style={{ height: 5, backgroundColor: '#00000026', borderRadius: 999, marginTop: 5, overflow: 'hidden' }}>
-              <View style={{ height: '100%', width: sev.pct + '%', backgroundColor: '#FFFFFF', borderRadius: 999 }} />
+            <View style={{ height: 12, backgroundColor: 'rgba(0,0,0,0.18)', borderRadius: 6, marginTop: 7, overflow: 'hidden' }}>
+              <View style={{ height: '100%', width: sev.pct + '%', backgroundColor: '#FFFFFF', borderRadius: 6 }} />
             </View>
           </View>
           <View style={{ alignItems: 'flex-end', marginLeft: 12 }}>
@@ -7412,22 +8004,32 @@ function ProfilScreen(props) {
               <Text style={{ fontSize: 11, color: '#FFFFFFCC', fontFamily: FONT.govde, marginTop: 2 }}>{profil.hedefNet} net hedef</Text>
             ) : null}
           </View>
-        </LinearGradient>
+        </View>
       </View>
 
       {/* ---------- ÖZET SAYILAR: tek satır, nötr ---------- */}
-      <View style={[st.kart, { flexDirection: 'row', paddingVertical: 16 }]}>
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', marginBottom: 2 }}>
         {[
-          { label: 'Öğrenilen', val: ogrenilenler, renk: P.yesil },
-          { label: 'Gün Serisi', val: seri, renk: P.altin },
-          { label: 'Ezberlenen', val: usta, renk: P.mor },
-          { label: 'Tekrar', val: toplamReps, renk: P.mavi },
-        ].map((it, i) => (
-          <View key={it.label} style={{ flex: 1, alignItems: 'center' }}>
-            <Text style={{ fontFamily: FONT.baslik, fontSize: 22, color: it.renk }}>{it.val}</Text>
-            <Text style={{ fontSize: 11, color: P.inkFaint, fontFamily: FONT.govdeOrta, marginTop: 2 }}>{it.label}</Text>
-          </View>
-        ))}
+          { label: 'Öğrenilen', val: ogrenilenler, renk: P.yesil, Ikon: CircleCheckBig },
+          { label: 'Gün serisi', val: seri, renk: P.alev, Ikon: Flame },
+          { label: 'Ezberlenen', val: usta, renk: P.mor, Ikon: BrainCircuit },
+          { label: 'Tekrar', val: toplamReps, renk: P.mavi, Ikon: RotateCcw },
+        ].map((it) => {
+          const IstIkon = it.Ikon;
+          return (
+            <View key={it.label} style={{
+              width: '48%', flexDirection: 'row', alignItems: 'center', marginBottom: 12,
+              backgroundColor: P.yuzey, borderRadius: 18, padding: 12,
+              borderWidth: 2, borderColor: P.line, borderBottomWidth: 4, borderBottomColor: P.lineKoyu,
+            }}>
+              <IstIkon size={24} color={it.renk} strokeWidth={2.6} />
+              <View style={{ marginLeft: 10 }}>
+                <Text style={{ fontFamily: FONT.baslik, fontSize: 20, color: P.ink }}>{it.val}</Text>
+                <Text style={{ fontSize: 12, color: P.inkSoft, fontFamily: FONT.govdeKalin }}>{it.label}</Text>
+              </View>
+            </View>
+          );
+        })}
       </View>
 
       {/* ---------- 7 GÜN İSTATİSTİĞİ ---------- */}
@@ -7451,12 +8053,12 @@ function ProfilScreen(props) {
           return (
             <View key={d.id} style={{ marginBottom: 13 }}>
               <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 6 }}>
-                <DersIkon size={16} color={d.renk} strokeWidth={1.8} />
-                <Text style={{ flex: 1, marginLeft: 9, fontSize: 15, fontFamily: FONT.govde, color: P.ink }}>{d.ad}</Text>
-                <Text style={{ fontSize: 14, fontFamily: FONT.monoBold, color: d.renk, width: 42, textAlign: 'right' }}>%{pct}</Text>
+                <DersIkon size={18} color={d.renk} strokeWidth={2.4} />
+                <Text style={{ flex: 1, marginLeft: 9, fontSize: 15, fontFamily: FONT.govdeKalin, color: P.ink }}>{d.ad}</Text>
+                <Text style={{ fontSize: 15, fontFamily: FONT.baslik, color: d.renk, width: 46, textAlign: 'right' }}>%{pct}</Text>
               </View>
-              <View style={{ height: 10, backgroundColor: P.bgAlt, borderRadius: 999, overflow: 'hidden' }}>
-                <View style={{ height: '100%', width: pct + '%', backgroundColor: d.renk, borderRadius: 999 }} />
+              <View style={{ height: 14, backgroundColor: P.line, borderRadius: 7, overflow: 'hidden' }}>
+                <View style={{ height: '100%', width: pct + '%', backgroundColor: d.renk, borderRadius: 7 }} />
               </View>
             </View>
           );
@@ -7467,14 +8069,15 @@ function ProfilScreen(props) {
       <TouchableOpacity onPress={() => { titre.hafif(); setRozetModalAcik(true); }} activeOpacity={0.85}
         style={[st.kart, { flexDirection: 'row', alignItems: 'center' }]}>
         <View style={{
-          width: 42, height: 42, borderRadius: 14, backgroundColor: P.altin + '22',
+          width: 44, height: 44, borderRadius: 14, backgroundColor: P.altin,
+          borderBottomWidth: 3, borderBottomColor: P.altinKoyu,
           alignItems: 'center', justifyContent: 'center', marginRight: 13,
         }}>
-          <Medal size={22} color={P.altin} strokeWidth={2.2} />
+          <Medal size={22} color="#FFFFFF" strokeWidth={2.6} />
         </View>
         <View style={{ flex: 1 }}>
-          <Text style={{ fontFamily: FONT.govdeKalin, fontSize: 15, color: P.ink }}>Rozetler</Text>
-          <Text style={{ fontFamily: FONT.mono, fontSize: 12, color: P.inkFaint, marginTop: 2 }}>
+          <Text style={{ fontFamily: FONT.baslik, fontSize: 17, color: P.ink }}>Rozetler</Text>
+          <Text style={{ fontFamily: FONT.govdeKalin, fontSize: 13, color: P.inkSoft, marginTop: 1 }}>
             {acikRozetSayisi} / {ROZETLER.length} kazanıldı
           </Text>
         </View>
@@ -7505,54 +8108,51 @@ function ProfilScreen(props) {
       {/* ---------- AYARLAR / HESAP ---------- */}
       {[
         { id: 'ayarlar', ad: 'Ayarlar', alt: 'Hedefler, bildirimler, görünüm',
-          Ikon: Settings, gradyan: ['#4776E6', '#8E54E9'] },
+          Ikon: Settings, oyunRenk: [P.mavi, P.maviKoyu] },
         { id: 'liderlik', ad: 'Liderlik', alt: 'Rumuzunla haftalık yarış',
-          Ikon: Trophy, gradyan: ['#E52D27', '#F7971E'] },
+          Ikon: Trophy, oyunRenk: [P.altin, P.altinKoyu] },
         { id: 'hesap', ad: 'Hesap', alt: 'Yedekleme, çıkış, hesabı silme',
-          Ikon: Cloud, gradyan: ['#00B4DB', '#0083B0'] },
+          Ikon: Cloud, oyunRenk: [P.yesil, P.yesilKoyu] },
         { id: 'mektup', ad: 'Geleceğe Mektup', alt: 'Sınav gününe kilitli bir not',
-          Ikon: Lock, gradyan: ['#6D5FE8', '#8E54E9'] },
+          Ikon: Lock, oyunRenk: [P.mor, P.morKoyu] },
         { id: 'hakkinda', ad: 'Hakkında', alt: 'Sürüm ve az bilinen özellikler',
-          Ikon: Info, gradyan: ['#8E9AAF', '#5C6B82'] },
+          Ikon: Info, oyunRenk: [P.inkFaint, P.inkSoft] },
         { id: 'davet', ad: 'Arkadaşını Davet Et', alt: 'İkiniz de +50 XP ve bonus deneme kazanın',
-          Ikon: Users, gradyan: ['#8E54E9', '#6D5FE8'] },
-        { id: 'recap', ad: 'Haftalık Özetim', alt: 'Bu haftaki ilerlemeni tekrar izle',
-          Ikon: TrendingUp, gradyan: ['#27AE60', '#1B7A43'] },
+          Ikon: Users, oyunRenk: [P.kirmizi, P.kirmiziKoyu] },
+        { id: 'recap', ad: 'Haftanı yeniden izle', alt: 'Bu haftaki ilerlemenin animasyonlu özeti',
+          Ikon: TrendingUp, oyunRenk: [P.alev, P.altinKoyu] },
       ].map(b => {
         const GirisIkon = b.Ikon;
         return (
-          <View key={b.id} style={[st.golge, { borderRadius: 20, marginBottom: 13, overflow: 'hidden' }]}>
-            <TouchableOpacity activeOpacity={0.88}
-              onPress={() => { titre.orta(); b.id === 'recap' ? onRecapAc() : setAltSayfa(b.id); }}>
-              <LinearGradient colors={b.gradyan} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-                style={{ flexDirection: 'row', alignItems: 'center', padding: 16 }}>
-                <View style={{
-                  width: 46, height: 46, borderRadius: 15, backgroundColor: '#FFFFFF2E',
-                  alignItems: 'center', justifyContent: 'center', marginRight: 14,
-                }}>
-                  <GirisIkon size={24} color="#FFFFFF" strokeWidth={2.6} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={{ fontSize: 19, fontFamily: FONT.monoBold, color: '#FFFFFF' }}>{b.ad}</Text>
-                  <Text style={{ fontSize: 14, fontFamily: FONT.govde, color: '#FFFFFFC0', marginTop: 1 }}>{b.alt}</Text>
-                </View>
-                <ChevronRight size={22} color="#FFFFFF" strokeWidth={2.8} />
-              </LinearGradient>
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity key={b.id} activeOpacity={0.85}
+            onPress={() => { titre.orta(); b.id === 'recap' ? onRecapAc() : setAltSayfa(b.id); }}
+            style={[st.dersSatir, { paddingVertical: 13 }]}>
+            <View style={{
+              width: 44, height: 44, borderRadius: 14, backgroundColor: b.oyunRenk[0],
+              borderBottomWidth: 3, borderBottomColor: b.oyunRenk[1],
+              alignItems: 'center', justifyContent: 'center', marginRight: 14,
+            }}>
+              <GirisIkon size={22} color="#FFFFFF" strokeWidth={2.6} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 17, fontFamily: FONT.baslik, color: P.ink }}>{b.ad}</Text>
+              <Text style={{ fontSize: 13, fontFamily: FONT.govde, color: P.inkSoft, marginTop: 1 }}>{b.alt}</Text>
+            </View>
+            <ChevronRight size={20} color={P.inkFaint} strokeWidth={2.8} />
+          </TouchableOpacity>
         );
       })}
 
       <View style={{ alignItems: 'center', marginTop: 6 }}>
-        <Text style={{ fontSize: 12, color: P.inkFaint, fontFamily: FONT.mono }}>Ligo LGS Cepte · v4.17.0 · 6 ders</Text>
+        <Text style={{ fontSize: 12, color: P.inkFaint, fontFamily: FONT.mono }}>Ligo LGS Cepte · v4.70.0 · 6 ders</Text>
       </View>
       </ScrollView>
     </View>
   );
 }
 
-function AyarlarScreen({ profil, setProfil, hedefKart, setHedefKart, sinavTarihi, setSinavTarihi, bildirimAcik, setBildirimAcik, bildirimSaat, setBildirimSaat, basliksiz, premium, onPremiumAc, sesAcik, setSesAcik }) {
-  const { P, s: st, DERSLER, koyu, setKoyu } = useTema();
+function AyarlarScreen({ profil, setProfil, hedefKart, setHedefKart, sinavTarihi, setSinavTarihi, bildirimAcik, setBildirimAcik, bildirimSaat, setBildirimSaat, basliksiz, premium, onPremiumAc, sesAcik, setSesAcik, haftalikPlan, setHaftalikPlan }) {
+  const { P, s: st, DERSLER, koyu, setKoyu, sepya, setSepya } = useTema();
   const kenar = useSafeAreaInsets();
   // Sınav tarihi için ayrı bir taslak — geçersiz/eksik bir format asla
   // gerçek sinavTarihi'ye yansımaz. Aksi halde "asdf" gibi bir giriş
@@ -7576,11 +8176,12 @@ function AyarlarScreen({ profil, setProfil, hedefKart, setHedefKart, sinavTarihi
       {/* Ligo+ — her zaman erişilebilir giriş noktası, limite takılmayı beklemez */}
       {onPremiumAc && (
         <TouchableOpacity onPress={() => { titre.hafif(); onPremiumAc(); }} activeOpacity={0.85}
-          style={{ borderRadius: 18, overflow: 'hidden', marginBottom: 20 }}>
-          <LinearGradient
-            colors={premium ? ['#B8860B', '#FFD966'] : ['#4776E6', '#8E54E9']}
-            start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-            style={{ flexDirection: 'row', alignItems: 'center', padding: 16 }}>
+          style={{
+            borderRadius: 20, marginBottom: 20,
+            backgroundColor: premium ? P.altin : P.mor,
+            borderBottomWidth: 5, borderBottomColor: premium ? P.altinKoyu : P.morKoyu,
+          }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', padding: 16 }}>
             <View style={{
               width: 42, height: 42, borderRadius: 14, backgroundColor: '#FFFFFF33',
               alignItems: 'center', justifyContent: 'center', marginRight: 13,
@@ -7588,37 +8189,92 @@ function AyarlarScreen({ profil, setProfil, hedefKart, setHedefKart, sinavTarihi
               <Crown size={22} color="#FFFFFF" strokeWidth={2.2} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={{ fontFamily: FONT.govdeKalin, fontSize: 16, color: '#FFFFFF' }}>
+              <Text style={{ fontFamily: FONT.baslik, fontSize: 17, color: '#FFFFFF' }}>
                 {premium ? 'Ligo+ Üyesin' : 'Ligo+\'a Yükselt'}
               </Text>
               <Text style={{ fontFamily: FONT.govde, fontSize: 12, color: '#FFFFFFCC', marginTop: 2 }}>
                 {premium ? 'Aboneliğini yönet' : 'Sınırsız kart ve deneme sınavı'}
               </Text>
             </View>
-            <ChevronRight size={20} color="#FFFFFFCC" strokeWidth={2.2} />
-          </LinearGradient>
+            <ChevronRight size={22} color="#FFFFFF" strokeWidth={2.8} />
+          </View>
         </TouchableOpacity>
       )}
 
-      <Text style={st.etiket}>GÖRÜNÜM</Text>
+      <Text style={st.etiket}>Görünüm</Text>
       <View style={{ flexDirection: 'row', marginBottom: 18 }}>
         <TouchableOpacity onPress={() => { titre.hafif(); setKoyu(false); }}
-          style={[st.hap, !koyu && st.hapAktif, { marginRight: 8, flex: 1, alignItems: 'center' }]}>
+          style={[st.hap, (!koyu && !sepya) && st.hapAktif, { marginRight: 8, flex: 1, alignItems: 'center' }]}>
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <Sun size={16} color={!koyu ? P.red : P.inkSoft} strokeWidth={1.8} />
-            <Text style={[st.hapYazi, { marginLeft: 6 }, !koyu && { color: P.red, fontFamily: FONT.govdeKalin }]}>Aydınlık</Text>
+            <Sun size={16} color={(!koyu && !sepya) ? P.neon : P.inkSoft} strokeWidth={1.8} />
+            <Text style={[st.hapYazi, { marginLeft: 6 }, (!koyu && !sepya) && { color: P.neon, fontFamily: FONT.govdeKalin }]}>Aydınlık</Text>
           </View>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => { titre.hafif(); setKoyu(true); }}
-          style={[st.hap, koyu && st.hapAktif, { flex: 1, alignItems: 'center' }]}>
+          style={[st.hap, (koyu && !sepya) && st.hapAktif, { marginRight: 8, flex: 1, alignItems: 'center' }]}>
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <AyIkon size={16} color={koyu ? P.red : P.inkSoft} strokeWidth={1.8} />
-            <Text style={[st.hapYazi, { marginLeft: 6 }, koyu && { color: P.red, fontFamily: FONT.govdeKalin }]}>Gece</Text>
+            <AyIkon size={16} color={(koyu && !sepya) ? P.neon : P.inkSoft} strokeWidth={1.8} />
+            <Text style={[st.hapYazi, { marginLeft: 6 }, (koyu && !sepya) && { color: P.neon, fontFamily: FONT.govdeKalin }]}>Gece</Text>
+          </View>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => { titre.hafif(); setSepya(true); }}
+          style={[st.hap, sepya && st.hapAktif, { flex: 1, alignItems: 'center' }]}>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <Coffee size={16} color={sepya ? P.neon : P.inkSoft} strokeWidth={1.8} />
+            <Text style={[st.hapYazi, { marginLeft: 6 }, sepya && { color: P.neon, fontFamily: FONT.govdeKalin }]}>Sepya</Text>
           </View>
         </TouchableOpacity>
       </View>
+      {sepya && (
+        <Text style={{ fontFamily: FONT.govde, fontSize: 12, color: P.inkFaint, marginTop: -12, marginBottom: 18 }}>
+          Göz yorgunluğunu azaltan, sıcak tonlu okuma modu — özellikle gece çalışırken önerilir.
+        </Text>
+      )}
 
-      <Text style={st.etiket}>SINAV TARİHİ (YYYY-AA-GG)</Text>
+      <Text style={st.etiket}>Haftalık çalışma planı</Text>
+      <Text style={{ fontFamily: FONT.govde, fontSize: 12, color: P.inkFaint, marginBottom: 12 }}>
+        Hangi gün hangi dersi çalışacağını önceden belirle — ana sayfada hatırlatırız.
+      </Text>
+      {[
+        { gun: 1, ad: 'Pazartesi' }, { gun: 2, ad: 'Salı' }, { gun: 3, ad: 'Çarşamba' },
+        { gun: 4, ad: 'Perşembe' }, { gun: 5, ad: 'Cuma' }, { gun: 6, ad: 'Cumartesi' }, { gun: 0, ad: 'Pazar' },
+      ].map(({ gun, ad: gunAdi }) => (
+        <View key={gun} style={{ marginBottom: 10 }}>
+          <Text style={{ fontFamily: FONT.govdeKalin, fontSize: 13, color: P.ink, marginBottom: 6 }}>{gunAdi}</Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            {DERSLER.map(d => {
+              const seciliMi = haftalikPlan[gun] === d.id;
+              return (
+                <TouchableOpacity key={d.id}
+                  onPress={() => {
+                    titre.hafif();
+                    setHaftalikPlan(onceki => {
+                      const yeni = { ...onceki };
+                      if (seciliMi) delete yeni[gun];
+                      else yeni[gun] = d.id;
+                      return yeni;
+                    });
+                  }}
+                  style={{
+                    flexDirection: 'row', alignItems: 'center', marginRight: 8,
+                    paddingVertical: 8, paddingHorizontal: 12, borderRadius: 12,
+                    backgroundColor: seciliMi ? d.renk + '20' : P.yuzey,
+                    borderWidth: 1.5, borderColor: seciliMi ? d.renk : P.line,
+                  }}>
+                  {d.ikon && <d.ikon size={13} color={seciliMi ? d.renk : P.inkSoft} strokeWidth={2} style={{ marginRight: 5 }} />}
+                  <Text style={{
+                    fontFamily: seciliMi ? FONT.govdeKalin : FONT.govde, fontSize: 12,
+                    color: seciliMi ? d.renk : P.inkSoft,
+                  }}>{d.ad}</Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        </View>
+      ))}
+      <View style={{ height: 8 }} />
+
+      <Text style={st.etiket}>Sınav tarihi (YYYY-AA-GG)</Text>
       <TextInput onFocus={() => titre.hafif()} style={st.girdi} value={sinavTarihiTaslak}
         onChangeText={(t) => {
           setSinavTarihiTaslak(t);
@@ -7634,14 +8290,14 @@ function AyarlarScreen({ profil, setProfil, hedefKart, setHedefKart, sinavTarihi
         </Text>
       )}
 
-      <Text style={st.etiket}>ADIN</Text>
+      <Text style={st.etiket}>Adın</Text>
       <TextInput onFocus={() => titre.hafif()} style={st.girdi} value={profil.ad || ''} onChangeText={(t) => setProfil(p => ({ ...p, ad: t }))}
         placeholder="Örn. Ahmet" placeholderTextColor={P.inkFaint} autoCapitalize="words" maxLength={15} />
 
-      <Text style={st.etiket}>HEDEF OKUL</Text>
+      <Text style={st.etiket}>Hedef okul</Text>
       <TextInput onFocus={() => titre.hafif()} style={st.girdi} value={profil.hedefOkul || ''} onChangeText={(t) => setProfil(p => ({ ...p, hedefOkul: t }))} placeholder="Örn. Fen Lisesi" placeholderTextColor={P.inkFaint} maxLength={15} />
 
-      <Text style={st.etiket}>NET HEDEFİ</Text>
+      <Text style={st.etiket}>Net hedefi</Text>
       <TextInput onFocus={() => titre.hafif()} style={st.girdi} value={profil.hedefNet || ''}
         onChangeText={(t) => {
           const sade = t.replace(/[^0-9]/g, '').slice(0, 2);
@@ -7650,7 +8306,7 @@ function AyarlarScreen({ profil, setProfil, hedefKart, setHedefKart, sinavTarihi
         }}
         keyboardType="number-pad" placeholder="Örn. 75" placeholderTextColor={P.inkFaint} maxLength={2} />
 
-      <Text style={st.etiket}>GÜNLÜK HEDEF</Text>
+      <Text style={st.etiket}>Günlük hedef</Text>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: 16 }}>
         {[15, 30, 50, 75].map(n => (
           <TouchableOpacity key={n} onPress={() => { titre.hafif(); setHedefKart(n); }}
@@ -7662,7 +8318,7 @@ function AyarlarScreen({ profil, setProfil, hedefKart, setHedefKart, sinavTarihi
         ))}
       </View>
 
-      <Text style={st.etiket}>ZAYIF DERSLER · ÖNCELİKLENDİRME</Text>
+      <Text style={st.etiket}>Zayıf derslerin (önce bunlar gelir)</Text>
       <View style={{ marginBottom: 16 }}>
         {DERSLER.map(d => {
           const secili = (profil.zayifDersler || []).includes(d.id);
@@ -7678,23 +8334,23 @@ function AyarlarScreen({ profil, setProfil, hedefKart, setHedefKart, sinavTarihi
         })}
       </View>
 
-      <Text style={st.etiket}>SES EFEKTLERİ</Text>
+      <Text style={st.etiket}>Ses efektleri</Text>
       <TouchableOpacity onPress={() => { titre.hafif(); setSesAcik(a => !a); }}
         style={[st.hap, sesAcik && st.hapAktif, { marginBottom: 16, alignSelf: 'flex-start' }]}>
-        <Text style={[st.hapYazi, sesAcik && { color: P.red, fontFamily: FONT.monoBold }]}>{sesAcik ? '☑ AÇIK' : '☐ KAPALI'}</Text>
+        <Text style={[st.hapYazi, sesAcik && { color: P.neon, fontFamily: FONT.monoBold }]}>{sesAcik ? '☑ Açık' : '☐ Kapalı'}</Text>
       </TouchableOpacity>
 
-      <Text style={st.etiket}>GÜNLÜK HATIRLATMA BİLDİRİMİ</Text>
+      <Text style={st.etiket}>Günlük hatırlatma bildirimi</Text>
       <TouchableOpacity onPress={() => { titre.hafif(); setBildirimAcik(a => !a); }}
         style={[st.hap, bildirimAcik && st.hapAktif, { marginBottom: 10, alignSelf: 'flex-start' }]}>
-        <Text style={[st.hapYazi, bildirimAcik && { color: P.red, fontFamily: FONT.monoBold }]}>{bildirimAcik ? '☑ AÇIK' : '☐ KAPALI'}</Text>
+        <Text style={[st.hapYazi, bildirimAcik && { color: P.neon, fontFamily: FONT.monoBold }]}>{bildirimAcik ? '☑ Açık' : '☐ Kapalı'}</Text>
       </TouchableOpacity>
       {bildirimAcik && (
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', marginBottom: 16 }}>
           {[18, 19, 20, 21, 22].map(sa => (
             <TouchableOpacity key={sa} onPress={() => { titre.hafif(); setBildirimSaat(sa); }}
               style={[st.hap, bildirimSaat === sa && st.hapAktif, { marginRight: 8, marginBottom: 8 }]}>
-              <Text style={[st.hapYazi, bildirimSaat === sa && { color: P.red, fontFamily: FONT.monoBold }]}>{sa}:00</Text>
+              <Text style={[st.hapYazi, bildirimSaat === sa && { color: P.neon, fontFamily: FONT.monoBold }]}>{sa}:00</Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -7794,7 +8450,7 @@ function AcilisEkrani({ hazirMi, onBitti }) {
   const donusDerece = donus.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '360deg'] });
 
   return (
-    <Animated.View style={{ flex: 1, backgroundColor: '#10121A', opacity: cikisOpak }}>
+    <Animated.View style={{ flex: 1, backgroundColor: '#0F1530', opacity: cikisOpak }}>
       {AcilisEkrani_ARKAPLAN && (
         <Animated.Image
           source={AcilisEkrani_ARKAPLAN}
@@ -7850,6 +8506,14 @@ function Icerik() {
   const [sonAktifGun, setSonAktifGun] = useState(null);
   const [gunluk, setGunluk] = useState({});        // { 'YYYY-MM-DD': kartSayisi }
   const [gunlukDers, setGunlukDers] = useState({}); // { 'YYYY-MM-DD': { dersId: sayi } }
+  // Akıllı Zayıf Konu Takibi — hangi ünitede ne sıklıkla yanlış/zorlanma
+  // yaşandığını günlük+üniteye göre tutar. Haftalık özette "en çok
+  // yanlış yaptığın konu" için kullanılır.
+  const [gunlukZorlanma, setGunlukZorlanma] = useState({}); // { 'YYYY-MM-DD': { 'ders|unite': sayi } }
+  // Haftalık Çalışma Planı — hangi haftanın hangi gününde hangi dersin
+  // çalışılacağını tutar. Anahtar JS'in Date.getDay() ile aynı:
+  // 0=Pazar, 1=Pazartesi, ..., 6=Cumartesi.
+  const [haftalikPlan, setHaftalikPlan] = useState({}); // { 0: 'mat', 1: 'turkce', ... }
   const [kutlama, setKutlama] = useState(null);     // { tur, veri } — tam ekran kutlama
   const [yeniRozet, setYeniRozet] = useState(null); // yeni açılan rozet — üstten kayan bildirim
   const rozetIlkKontrol = useRef(false);
@@ -7973,7 +8637,7 @@ function Icerik() {
     (async () => {
       try {
         const keys = ['lgs_srs', 'lgs_xp', 'lgs_seri', 'lgs_bugun', 'lgs_hedef', 'lgs_onboarded', 'lgs_setup', 'lgs_profil',
-          'lgs_son_aktif', 'lgs_sinav_tarihi', 'lgs_sinav_sayisi', 'lgs_en_iyi_sinav', 'lgs_bildirim_acik', 'lgs_bildirim_saat', 'lgs_gunluk', 'lgs_misafir', 'lgs_deneme_gecmisi', 'lgs_gunluk_ders', 'lgs_ses_acik', 'lgs_unite_gecmisi', 'lgs_kart_notlari', 'lgs_gelecek_mektup', 'lgs_davet_gorulen', 'lgs_grup_kodu', 'lgs_puanlama_istendi', 'lgs_yenilikler_v1', 'lgs_isinma_tarih', 'lgs_seri_dondurma', 'lgs_seri_dondurma_ay', 'lgs_bonus_deneme', 'lgs_son_recap_hafta', 'lgs_meydan_okuma_tarih'];
+          'lgs_son_aktif', 'lgs_sinav_tarihi', 'lgs_sinav_sayisi', 'lgs_en_iyi_sinav', 'lgs_bildirim_acik', 'lgs_bildirim_saat', 'lgs_gunluk', 'lgs_misafir', 'lgs_deneme_gecmisi', 'lgs_gunluk_ders', 'lgs_gunluk_zorlanma', 'lgs_haftalik_plan', 'lgs_ses_acik', 'lgs_unite_gecmisi', 'lgs_kart_notlari', 'lgs_gelecek_mektup', 'lgs_davet_gorulen', 'lgs_grup_kodu', 'lgs_puanlama_istendi', 'lgs_yenilikler_v1', 'lgs_isinma_tarih', 'lgs_seri_dondurma', 'lgs_seri_dondurma_ay', 'lgs_bonus_deneme', 'lgs_son_recap_hafta', 'lgs_meydan_okuma_tarih'];
         const pairs = await AsyncStorage.multiGet(keys);
         const d = {};
         pairs.forEach(([k, v]) => { if (v) d[k] = v; });
@@ -8002,6 +8666,8 @@ function Icerik() {
         if (d.lgs_gunluk) { try { setGunluk(JSON.parse(d.lgs_gunluk)); } catch (e) { setGunluk({}); } }
         if (d.lgs_deneme_gecmisi) { try { setDenemeGecmisi(JSON.parse(d.lgs_deneme_gecmisi)); } catch (e) { setDenemeGecmisi([]); } }
         if (d.lgs_gunluk_ders) { try { setGunlukDers(JSON.parse(d.lgs_gunluk_ders)); } catch (e) { setGunlukDers({}); } }
+        if (d.lgs_gunluk_zorlanma) { try { setGunlukZorlanma(JSON.parse(d.lgs_gunluk_zorlanma)); } catch (e) { setGunlukZorlanma({}); } }
+        if (d.lgs_haftalik_plan) { try { setHaftalikPlan(JSON.parse(d.lgs_haftalik_plan)); } catch (e) { setHaftalikPlan({}); } }
         if (d.lgs_misafir === '1') setMisafir(true);
 
         let seriYuklendi = d.lgs_seri ? Number(d.lgs_seri) : 0;
@@ -8078,6 +8744,8 @@ function Icerik() {
           ['lgs_gunluk', JSON.stringify(gunluk)],
           ['lgs_deneme_gecmisi', JSON.stringify(denemeGecmisi)],
           ['lgs_gunluk_ders', JSON.stringify(gunlukDers)],
+          ['lgs_gunluk_zorlanma', JSON.stringify(gunlukZorlanma)],
+          ['lgs_haftalik_plan', JSON.stringify(haftalikPlan)],
           ['lgs_kart_notlari', JSON.stringify(kartNotlari)],
           ['lgs_gelecek_mektup', JSON.stringify(gelecekMektup)],
           ['lgs_davet_gorulen', String(davetSayisiGorulen)],
@@ -8093,7 +8761,7 @@ function Icerik() {
         ]);
       } catch (e) { console.log('Save error:', e); }
     })();
-  }, [srs, xp, seri, bugun, hedefKart, yukluyor, onboarded, setupDone, profil, sonAktifGun, sinavTarihi, sinavSayisi, enIyiSinavPct, bildirimAcik, bildirimSaat, gunluk, denemeGecmisi, gunlukDers, sesAcik, kartNotlari, gelecekMektup, davetSayisiGorulen, grupKodu, puanlamaIstendi, yenilikGorundu, isinmaTarih, seriDondurmaSayisi, seriDondurmaYenilemeAy, bonusDenemeHakki, sonRecapHaftasi, meydanOkumaTarih]);
+  }, [srs, xp, seri, bugun, hedefKart, yukluyor, onboarded, setupDone, profil, sonAktifGun, sinavTarihi, sinavSayisi, enIyiSinavPct, bildirimAcik, bildirimSaat, gunluk, denemeGecmisi, gunlukDers, gunlukZorlanma, haftalikPlan, sesAcik, kartNotlari, gelecekMektup, davetSayisiGorulen, grupKodu, puanlamaIstendi, yenilikGorundu, isinmaTarih, seriDondurmaSayisi, seriDondurmaYenilemeAy, bonusDenemeHakki, sonRecapHaftasi, meydanOkumaTarih]);
 
   // Ses ayarını lib/sesler.js'e senkronize et
   useEffect(() => { sesAyarla(sesAcik); }, [sesAcik]);
@@ -8198,6 +8866,17 @@ function Icerik() {
         return { ...g, [gun]: bugunku };
       });
     }
+    // Akıllı Zayıf Konu Takibi — kart yanlış cevaplandığında, hangi
+    // ünitede zorlandığını günlük bazda sayıyoruz. Haftalık özette
+    // "en çok yanlış yaptığın konu" bunun üzerinden hesaplanır.
+    if (!dogruMu && kart) {
+      const uniteAnahtar = kart.ders + '|' + kart.unite;
+      setGunlukZorlanma(g => {
+        const bugunku = { ...(g[gun] || {}) };
+        bugunku[uniteAnahtar] = (bugunku[uniteAnahtar] || 0) + 1;
+        return { ...g, [gun]: bugunku };
+      });
+    }
     // XP yalnızca doğru cevapta verilir; sonuç ekranındaki sayıyla birebir uyumlu.
     // bonusXp, Öngörülemez Ödül Kutusu'ndan gelen ek XP'dir.
     if (dogruMu) {
@@ -8260,7 +8939,7 @@ function Icerik() {
   const yereldenTazele = async () => {
     try {
       const keys = ['lgs_srs', 'lgs_xp', 'lgs_seri', 'lgs_bugun', 'lgs_hedef', 'lgs_profil',
-        'lgs_son_aktif', 'lgs_sinav_tarihi', 'lgs_sinav_sayisi', 'lgs_en_iyi_sinav', 'lgs_gunluk', 'lgs_deneme_gecmisi', 'lgs_gunluk_ders'];
+        'lgs_son_aktif', 'lgs_sinav_tarihi', 'lgs_sinav_sayisi', 'lgs_en_iyi_sinav', 'lgs_gunluk', 'lgs_deneme_gecmisi', 'lgs_gunluk_ders', 'lgs_gunluk_zorlanma'];
       const pairs = await AsyncStorage.multiGet(keys);
       const d = {};
       pairs.forEach(([k, v]) => { if (v) d[k] = v; });
@@ -8278,6 +8957,7 @@ function Icerik() {
       if (d.lgs_gunluk) { try { setGunluk(JSON.parse(d.lgs_gunluk)); } catch (e) {} }
       if (d.lgs_deneme_gecmisi) { try { setDenemeGecmisi(JSON.parse(d.lgs_deneme_gecmisi)); } catch (e) {} }
       if (d.lgs_gunluk_ders) { try { setGunlukDers(JSON.parse(d.lgs_gunluk_ders)); } catch (e) {} }
+      if (d.lgs_gunluk_zorlanma) { try { setGunlukZorlanma(JSON.parse(d.lgs_gunluk_zorlanma)); } catch (e) {} }
     } catch (e) { console.log('Tazeleme hatası:', e); }
   };
 
@@ -8332,7 +9012,33 @@ function Icerik() {
 
   // Play Store'un native puanlama penceresini açar — kurulu değilse
   // (henüz native build alınmadıysa) sessizce hiçbir şey yapmaz.
+  // Akıllı Yorum İsteği — mağaza puanlamasını sadece iyi bir deneyim
+  // yaşamış görünen kullanıcılara gösteriyoruz. Son deneme sınavı
+  // düşükse (kötü deneyim ihtimali), mağaza yerine kısa bir iç geri
+  // bildirim isteğine yönlendiriyoruz — üzgün kullanıcı asla mağazaya
+  // gitmesin diye.
   const puanlamaIste = () => {
+    const sonDeneme = (denemeGecmisi && denemeGecmisi.length)
+      ? denemeGecmisi[denemeGecmisi.length - 1] : null;
+    const deneyimKotuMu = sonDeneme && sonDeneme.pct < 50;
+
+    if (deneyimKotuMu) {
+      Alert.alert(
+        'Nasıl gidiyor?',
+        'Son çalışman biraz zor geçmiş gibi görünüyor. Bize neyi zor bulduğunu yazmak ister misin?',
+        [
+          { text: 'Belki sonra', style: 'cancel' },
+          {
+            text: 'Geri Bildirim Gönder',
+            onPress: () => {
+              Linking.openURL('mailto:enes3rkan@icloud.com?subject=Ligo%20LGS%20Cepte%20Geri%20Bildirim').catch(() => {});
+            },
+          },
+        ]
+      );
+      return;
+    }
+
     try {
       const StoreReview = require('expo-store-review');
       StoreReview.isAvailableAsync().then(kullanilabilir => {
@@ -8520,7 +9226,7 @@ function Icerik() {
     if (mod === 'kart') {
       return (
         <React.Fragment>
-          <StatusBar barStyle="light-content" backgroundColor={FOCUS.bg} />
+          <StatusBar barStyle={koyu ? 'light-content' : 'dark-content'} backgroundColor={koyu ? FOCUS.bg : CALISMA_ACIK.bg} />
           <KenardanGeriKaydir onGeri={cikis}>
             <KonuCalisma kartlar={kartlar} onBitti={cikis} />
           </KenardanGeriKaydir>
@@ -8531,7 +9237,7 @@ function Icerik() {
 
     return (
       <React.Fragment>
-        <StatusBar barStyle="light-content" backgroundColor={FOCUS.bg} />
+        <StatusBar barStyle={koyu ? 'light-content' : 'dark-content'} backgroundColor={koyu ? FOCUS.bg : CALISMA_ACIK.bg} />
         <KenardanGeriKaydir onGeri={cikis} aktif={!sinavMod}>
         <KartModu kartlar={kartlar} mod={mod} sinavMod={sinavMod}
           sinavSuresi={denemeDersSecimi ? 1500 : 2400} srs={srs}
@@ -8559,7 +9265,7 @@ function Icerik() {
               // Yanlış yapılan kart varsa, direkt ana sayfaya dönmek
               // yerine hata deseni analizi + "İkinci Şans" ekranını göster.
               if (yanlisKartlar && yanlisKartlar.length > 0) {
-                setDenemeSonucu({ yanlisKartlar, net, pct });
+                setDenemeSonucu({ yanlisKartlar, net, pct, dogru, toplam, dersSayac: dersSayacSonuc });
                 return;
               }
             }
@@ -8574,7 +9280,7 @@ function Icerik() {
   return (
     <Sayfa>
       <Animated.View style={{ flex: 1, transform: [{ translateX: sekmeKaydir }] }} {...sekmePan.panHandlers}>
-        {tab === 'home' && <HomeScreen srs={srs} xp={xp} seri={seri} bugun={bugun} hedefKart={hedefKart} onDersBaslat={setAktifDers} onOncelikliKonu={oncelikliKonuyaGit} sinavTarihi={sinavTarihi} profil={profil} onDenemeSekmesi={() => setTab('deneme')} onProfil={() => setTab('profil')} denemeGecmisi={denemeGecmisi} gunluk={gunluk} gunlukDers={gunlukDers} hesapVarMi={!!oturum} premium={premium} bugunYeniOgrenilenler={bugunYeniOgrenilenler} isinmaTamamlandiMi={isinmaTamamlandiMi} onIsinmaTamamlandi={isinmaTamamlandi} seriDondurmaSayisi={seriDondurmaSayisi} davetSayisiGorulen={davetSayisiGorulen} onDavetEt={() => setTab('profil')} meydanOkumaTamamlandiMi={meydanOkumaTamamlandiMi} onMeydanOkumaOdulAl={meydanOkumaOduluAl} />}
+        {tab === 'home' && <HomeScreen srs={srs} xp={xp} seri={seri} bugun={bugun} hedefKart={hedefKart} onDersBaslat={setAktifDers} onOncelikliKonu={oncelikliKonuyaGit} sinavTarihi={sinavTarihi} profil={profil} onDenemeSekmesi={() => setTab('deneme')} onProfil={() => setTab('profil')} denemeGecmisi={denemeGecmisi} gunluk={gunluk} gunlukDers={gunlukDers} hesapVarMi={!!oturum} premium={premium} bugunYeniOgrenilenler={bugunYeniOgrenilenler} isinmaTamamlandiMi={isinmaTamamlandiMi} onIsinmaTamamlandi={isinmaTamamlandi} seriDondurmaSayisi={seriDondurmaSayisi} davetSayisiGorulen={davetSayisiGorulen} onDavetEt={() => setTab('profil')} meydanOkumaTamamlandiMi={meydanOkumaTamamlandiMi} onMeydanOkumaOdulAl={meydanOkumaOduluAl} haftalikPlan={haftalikPlan} />}
         {tab === 'dersler' && <DerslerScreen srs={srs} onDersVeModBaslat={dersVeModBaslat} onGorselKutuphanesi={() => setGorselKutuphanesiAcik(true)} />}
         {tab === 'deneme' && <DenemeEkrani srs={srs} denemeGecmisi={denemeGecmisi} premium={premium} onBaslat={sinavBaslat} onNetHesaplayici={() => setNetHesaplayiciAcik(true)} bonusDenemeHakki={bonusDenemeHakki} onReklamOduluKazanildi={() => setBonusDenemeHakki(h => h + 1)} />}
         {tab === 'notlar' && <SinavNotlariEkrani />}
@@ -8586,7 +9292,7 @@ function Icerik() {
             sinavTarihi={sinavTarihi} setSinavTarihi={setSinavTarihi}
             bildirimAcik={bildirimAcik} setBildirimAcik={setBildirimAcik}
             bildirimSaat={bildirimSaat} setBildirimSaat={setBildirimSaat}
-            gunluk={gunluk} gunlukDers={gunlukDers} denemeGecmisi={denemeGecmisi}
+            gunluk={gunluk} gunlukDers={gunlukDers} gunlukZorlanma={gunlukZorlanma} denemeGecmisi={denemeGecmisi}
             uniteGecmisi={uniteGecmisi}
             gelecekMektup={gelecekMektup} setGelecekMektup={setGelecekMektup}
             davetSayisiGorulen={davetSayisiGorulen}
@@ -8681,7 +9387,12 @@ function Kok() {
     Baloo2_500Medium, Baloo2_600SemiBold, Baloo2_700Bold, Baloo2_800ExtraBold,
   });
   // Gece Panosu varsayılan: karanlık tema
-  const [koyu, setKoyuState] = useState(true);
+  // Varsayılan: parlak Oyun teması. Gece yalnızca kullanıcı seçtiyse.
+  const [koyu, setKoyuState] = useState(false);
+  // Göz Dostu Sepya Modu — koyu/aydınlık seçiminden bağımsız, üçüncü
+  // bir tema seçeneği. Aynı 'lgs_tema' anahtarını kullanır ('sepya'
+  // değeriyle), mevcut koyu/açık mantığına dokunmadan eklendi.
+  const [sepya, setSepyaState] = useState(false);
   const [temaOkundu, setTemaOkundu] = useState(false);
   const kenar = useSafeAreaInsets();
 
@@ -8689,7 +9400,8 @@ function Kok() {
     (async () => {
       try {
         const v = await AsyncStorage.getItem('lgs_tema');
-        if (v === 'acik') setKoyuState(false);
+        if (v === 'koyu') setKoyuState(true);
+        if (v === 'sepya') { setSepyaState(true); setKoyuState(false); }
       } catch (e) {}
       setTemaOkundu(true);
     })();
@@ -8697,7 +9409,14 @@ function Kok() {
 
   const setKoyu = (v) => {
     setKoyuState(v);
+    setSepyaState(false);
     AsyncStorage.setItem('lgs_tema', v ? 'koyu' : 'acik').catch(() => {});
+  };
+
+  const setSepya = (v) => {
+    setSepyaState(v);
+    if (v) setKoyuState(false);
+    AsyncStorage.setItem('lgs_tema', v ? 'sepya' : 'acik').catch(() => {});
   };
 
   if (!fontsLoaded || !temaOkundu) {
@@ -8708,7 +9427,7 @@ function Kok() {
   const altBosluk = Math.max(kenar.bottom, 12);
 
   return (
-    <TemaSaglayici koyu={koyu} setKoyu={setKoyu} altBosluk={altBosluk}>
+    <TemaSaglayici koyu={koyu} setKoyu={setKoyu} sepya={sepya} setSepya={setSepya} altBosluk={altBosluk}>
       <Icerik />
     </TemaSaglayici>
   );
