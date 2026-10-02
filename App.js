@@ -40,7 +40,7 @@ import { dersGorseli } from './lib/gorseller';
 import { ligoMesaji, bildirimleriPlanla } from './lib/ligo';
 import { ligoGorsel, ligoIfadesi } from './lib/ligoGorsel';
 import { disSoruEkle, odakOturumuKaydet, rumuzAyarla, liderlikSoru, davetKullan, davetSayisiniGetir, grupOlustur, grupKatil, gruptanAyril, kendiGrubunuGetir, grupUyeleriniGetir, sonAktifligimiGuncelle, grupAktifSayisiniGetir } from './lib/bulut';
-import { abonelikBaslat, premiumMi, paketleriGetir, satinAl, satinAlmalariGeriYukle, abonelikKullanilabilir } from './lib/abonelik';
+import { abonelikBaslat, premiumMi, paketleriGetir, satinAl, satinAlmalariGeriYukle, abonelikKullanilabilir, paketTuru, ucretsizDenemeGunu } from './lib/abonelik';
 import { sesCal, sesAyarla } from './lib/sesler';
 import { useIvmeTakip } from './lib/sallama';
 
@@ -333,47 +333,54 @@ function gunlukMeydanOkumaHesapla(gunluk, gunlukDers, hedefKart) {
 // açılmadan önce) require başarısız olur, sessizce onHata çağrılır —
 // uygulama hiçbir zaman çökmez.
 //
-// ÖNEMLİ: Gerçek AdMob hesabı açılınca, aşağıdaki GERCEK_ODUL_BIRIM_ID
-// değeri, AdMob panelinden alınan gerçek "Ödüllü" reklam birimi ID'siyle
-// değiştirilmeli. Şimdilik Google'ın resmi test ID'si kullanılıyor.
+// Geliştirme sırasında (__DEV__) Google'ın test birimi, yayında
+// gerçek AdMob "Ödüllü" reklam birimi kullanılır.
 // ============================================================
-const GERCEK_ODUL_BIRIM_ID = 'ca-app-pub-XXXXXXXXXXXXXXXX/YYYYYYYYYY'; // TODO: AdMob hesabı açılınca değiştir
+const GERCEK_ODUL_BIRIM_ID = 'ca-app-pub-8022761130557806/9578549029';
+
+let reklamSdkBaslatildi = false;
 
 function odulluReklamGoster(onOdulKazanildi, onHata) {
+  let bitti = false;
+  const temizleyiciler = [];
+  const temizle = () => { temizleyiciler.forEach(f => { try { f(); } catch (e) {} }); };
+  // Sonuç yalnızca bir kez bildirilir (ödül ya da hata).
+  const hata = () => { if (bitti) return; bitti = true; temizle(); onHata && onHata(); };
+
   try {
-    const { RewardedAd, RewardedAdEventType, TestIds } = require('react-native-google-mobile-ads');
+    const ads = require('react-native-google-mobile-ads');
+    const { RewardedAd, RewardedAdEventType, AdEventType, TestIds } = ads;
+    if (!reklamSdkBaslatildi) {
+      reklamSdkBaslatildi = true;
+      try { ads.default().initialize().catch(() => {}); } catch (e) {}
+    }
     const birimId = __DEV__ ? TestIds.REWARDED : GERCEK_ODUL_BIRIM_ID;
     const reklam = RewardedAd.createForAdRequest(birimId);
 
+    let yuklendi = false;
     let odulVerildi = false;
-    const temizle = () => {
-      try { kaldirYuklendi(); } catch (e) {}
-      try { kaldirOdul(); } catch (e) {}
-      try { kaldirKapandi(); } catch (e) {}
-    };
 
-    const kaldirYuklendi = reklam.addAdEventListener(RewardedAdEventType.LOADED, () => {
-      reklam.show();
-    });
-    const kaldirOdul = reklam.addAdEventListener(RewardedAdEventType.EARNED_REWARD, () => {
+    temizleyiciler.push(reklam.addAdEventListener(RewardedAdEventType.LOADED, () => {
+      yuklendi = true;
+      reklam.show().catch(hata);
+    }));
+    temizleyiciler.push(reklam.addAdEventListener(RewardedAdEventType.EARNED_REWARD, () => {
       odulVerildi = true;
-      onOdulKazanildi();
-    });
-    // 'CLOSED' olayı bazı sürümlerde farklı adlandırılabilir; olmasa
-    // da sorun değil, sadece dinleyici temizliği eksik kalır.
-    let kaldirKapandi = () => {};
-    if (RewardedAdEventType.CLOSED) {
-      kaldirKapandi = reklam.addAdEventListener(RewardedAdEventType.CLOSED, () => {
-        temizle();
-        if (!odulVerildi) onHata && onHata();
-      });
-    }
+    }));
+    // Ödül, reklam kapandığında verilir — kullanıcı uygulamaya döndüğünde
+    // kutlama/hak artışı görünür olsun diye.
+    temizleyiciler.push(reklam.addAdEventListener(AdEventType.CLOSED, () => {
+      if (bitti) return;
+      if (odulVerildi) { bitti = true; temizle(); onOdulKazanildi(); }
+      else hata();
+    }));
+    temizleyiciler.push(reklam.addAdEventListener(AdEventType.ERROR, hata));
 
     reklam.load();
     // Reklam 15 saniye içinde yüklenmezse pes et, kullanıcıyı bekletme.
-    setTimeout(() => { if (!odulVerildi) { temizle(); } }, 15000);
+    setTimeout(() => { if (!yuklendi) hata(); }, 15000);
   } catch (e) {
-    onHata && onHata();
+    hata();
   }
 }
 
@@ -2206,10 +2213,25 @@ function PremiumEkrani({ onKapat, onSatinAlindi }) {
   const [islemde, setIslemde] = useState(false);
   const [mesaj, setMesaj] = useState('');
 
+  const PAKET_ETIKET = {
+    aylik: { ad: 'Aylık', alt: 'her ay yenilenir' },
+    yillik: { ad: 'Yıllık', alt: 'her yıl yenilenir' },
+    omur_boyu: { ad: 'Ömür Boyu', alt: 'tek seferlik ödeme' },
+  };
+  const seciliPaket = paketler.find(p => p.identifier === secili);
+  const seciliTur = paketTuru(seciliPaket);
+  const seciliDenemeGunu = ucretsizDenemeGunu(seciliPaket);
+  const enUzunDeneme = Math.max(0, ...paketler.map(ucretsizDenemeGunu));
+  const dugmeEtiketi = islemde ? 'İŞLENİYOR...'
+    : seciliTur === 'omur_boyu' ? 'ÖMÜR BOYU PREMIUM AL'
+    : seciliDenemeGunu > 0 ? `${seciliDenemeGunu} GÜN ÜCRETSİZ DENE`
+    : 'PREMIUM\'A GEÇ';
+
   useEffect(() => {
     paketleriGetir().then(p => {
       setPaketler(p);
-      setSecili(p[0]?.identifier || null);
+      const yillik = p.find(x => paketTuru(x) === 'yillik');
+      setSecili((yillik || p[0])?.identifier || null);
       setYukleniyor(false);
     });
   }, []);
@@ -2294,7 +2316,7 @@ function PremiumEkrani({ onKapat, onSatinAlindi }) {
         }}>
           <ShieldCheck size={14} color="#FFC24D" strokeWidth={2.4} />
           <Text style={{ fontFamily: FONT.monoBold, fontSize: 11, color: '#FFC24D', marginLeft: 6 }}>
-            İlk 3 gün ücretsiz · İstediğin an iptal
+            {enUzunDeneme > 0 ? `İlk ${enUzunDeneme} gün ücretsiz · İstediğin an iptal` : 'İstediğin an iptal · Ömür boyu seçeneği'}
           </Text>
         </View>
 
@@ -2347,20 +2369,33 @@ function PremiumEkrani({ onKapat, onSatinAlindi }) {
           <YukleniyorGostergesi boyut={64} metin="Paketler yükleniyor..." />
         ) : (
           <>
-            {/* Plan seçici — yan yana grid, ikinci paket (genelde yıllık)
-                otomatik olarak "EN İYİ DEĞER" rozeti taşıyor. */}
-            <View style={{ flexDirection: 'row', width: '100%', marginBottom: mesaj ? 8 : 0 }}>
+            {/* Plan seçici — alt alta kartlar: Yıllık (EN İYİ DEĞER, varsayılan
+                seçili), Aylık, Ömür Boyu. Fiyatlar mağazadan gelir. */}
+            {paketler.length === 0 && (
+              <Text style={{ fontFamily: FONT.govde, fontSize: 13, color: FOCUS.textSoft, textAlign: 'center' }}>
+                Paketler şu an yüklenemedi. İnternet bağlantını kontrol edip tekrar dene.
+              </Text>
+            )}
+            <View style={{ width: '100%', marginBottom: mesaj ? 8 : 0 }}>
               {paketler.map((p, i) => {
                 const seciliMi = secili === p.identifier;
-                const enIyiDegerMi = paketler.length > 1 && i === paketler.length - 1;
+                const tur = paketTuru(p);
+                const etiket = PAKET_ETIKET[tur] || { ad: p.product?.title || p.identifier, alt: '' };
+                const enIyiDegerMi = tur === 'yillik';
+                const deneme = ucretsizDenemeGunu(p);
+                const aylikKarsilik = tur === 'yillik' ? p.product?.pricePerMonthString : null;
                 return (
                   <TouchableOpacity key={p.identifier}
-                    onPress={() => { titre.hafif(); setSecili(p.identifier); }}
+                    onPress={() => { titre.hafif(); setSecili(p.identifier); setMesaj(''); }}
+                    activeOpacity={0.85}
                     style={{
-                      flex: 1, marginRight: i === paketler.length - 1 ? 0 : 10,
+                      flexDirection: 'row', alignItems: 'center',
+                      marginTop: enIyiDegerMi ? 10 : 0,
+                      marginBottom: i === paketler.length - 1 ? 0 : 12,
                       backgroundColor: seciliMi ? '#FFB02015' : '#FFFFFF08',
                       borderWidth: 1.5, borderColor: seciliMi ? '#FFC24D' : '#FFFFFF1A',
-                      borderRadius: 18, padding: 15, paddingTop: enIyiDegerMi ? 19 : 15,
+                      borderRadius: 18, paddingHorizontal: 16, paddingVertical: 14,
+                      paddingTop: enIyiDegerMi ? 18 : 14,
                     }}>
                     {enIyiDegerMi && (
                       <View style={{
@@ -2373,22 +2408,32 @@ function PremiumEkrani({ onKapat, onSatinAlindi }) {
                         </Text>
                       </View>
                     )}
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                      <Text style={{ fontFamily: FONT.monoBold, fontSize: 12, color: '#FFFFFFB0' }} numberOfLines={1}>
-                        {p.product?.title || p.identifier}
-                      </Text>
-                      <View style={{
-                        width: 18, height: 18, borderRadius: 9, borderWidth: 1.5,
-                        borderColor: seciliMi ? '#FFC24D' : '#FFFFFF33',
-                        backgroundColor: seciliMi ? '#FFC24D' : 'transparent',
-                        alignItems: 'center', justifyContent: 'center',
-                      }}>
-                        {seciliMi && <Check size={11} color="#1A1500" strokeWidth={4} />}
-                      </View>
+                    <View style={{
+                      width: 20, height: 20, borderRadius: 10, borderWidth: 1.5, marginRight: 12,
+                      borderColor: seciliMi ? '#FFC24D' : '#FFFFFF33',
+                      backgroundColor: seciliMi ? '#FFC24D' : 'transparent',
+                      alignItems: 'center', justifyContent: 'center',
+                    }}>
+                      {seciliMi && <Check size={12} color="#1A1500" strokeWidth={4} />}
                     </View>
-                    <Text style={{ fontFamily: FONT.baslik, fontSize: 19, color: '#FFFFFF' }}>
-                      {p.product?.priceString || ''}
-                    </Text>
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontFamily: FONT.govdeKalin, fontSize: 15, color: '#FFFFFF' }} numberOfLines={1}>
+                        {etiket.ad}
+                      </Text>
+                      <Text style={{ fontFamily: FONT.govde, fontSize: 12, color: '#FFFFFF80', marginTop: 2 }} numberOfLines={1}>
+                        {deneme > 0 ? `${deneme} gün ücretsiz, sonra ${etiket.alt}` : etiket.alt}
+                      </Text>
+                    </View>
+                    <View style={{ alignItems: 'flex-end', marginLeft: 10 }}>
+                      <Text style={{ fontFamily: FONT.baslik, fontSize: 18, color: '#FFFFFF' }}>
+                        {p.product?.priceString || ''}
+                      </Text>
+                      {aylikKarsilik ? (
+                        <Text style={{ fontFamily: FONT.mono, fontSize: 11, color: '#FFC24D', marginTop: 2 }}>
+                          ayda {aylikKarsilik}
+                        </Text>
+                      ) : null}
+                    </View>
                   </TouchableOpacity>
                 );
               })}
@@ -2399,11 +2444,20 @@ function PremiumEkrani({ onKapat, onSatinAlindi }) {
             ) : null}
 
             <View style={{ width: '100%', marginTop: 22 }}>
-              <Dugme etiket={islemde ? 'İŞLENİYOR...' : '3 GÜN ÜCRETSİZ DENE'}
+              <Dugme etiket={dugmeEtiketi}
                 Ikon={islemde ? undefined : ChevronRight}
                 renk="#FFB020" renkKoyu="#C98E1A" tam
                 onPress={islemde || !secili ? undefined : satinAlBaslat} />
             </View>
+
+            {/* Google Play abonelik politikası: yenileme ve iptal koşulları
+                satın alma düğmesinin yanında açıkça yazmalı. */}
+            <Text style={{ fontFamily: FONT.govde, fontSize: 11, color: '#FFFFFF60', textAlign: 'center', lineHeight: 16, marginTop: 14 }}>
+              {seciliTur === 'omur_boyu'
+                ? 'Tek seferlik ödeme, abonelik değildir. Premium bu hesapta kalıcı olarak açılır.'
+                : 'Abonelik, iptal edilmedikçe dönem sonunda otomatik yenilenir. Google Play › Ödemeler ve abonelikler bölümünden istediğin an iptal edebilirsin.'
+                  + (seciliDenemeGunu > 0 ? ` Ücretsiz deneme bitmeden iptal edersen ücret alınmaz.` : '')}
+            </Text>
           </>
         )}
       </ScrollView>
@@ -8557,7 +8611,9 @@ function Icerik() {
   // (Expo Go, henüz native build alınmadı) her zaman "premium değil"
   // döner — güvenli/varsayılan taraf her zaman ücretsiz sürümdür.
   useEffect(() => {
-    if (!oturum?.user?.id) { setPremium(false); return; }
+    // Giriş yapmamış (misafir) kullanıcılar da satın alabilir — onların
+    // durumu RevenueCat'in anonim kimliğinden okunur.
+    if (!oturum?.user?.id) { premiumMi().then(setPremium); return; }
     abonelikBaslat(oturum.user.id).then(() => {
       premiumMi().then(setPremium);
     });
