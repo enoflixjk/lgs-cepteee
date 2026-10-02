@@ -25,8 +25,12 @@ const EKLENECEK_BLOK = `
 allprojects {
   configurations.all {
     resolutionStrategy.eachDependency { details ->
+      // Sadece AdMob SDK'sının kendi paketleri. 'play-services-ads-identifier'
+      // gibi ayrı sürümlenen paketler (RevenueCat bunu kullanıyor) HARİÇ —
+      // onların 24.6.0 diye bir sürümü yok, build'i düşürür.
       if (details.requested.group == 'com.google.android.gms' &&
-          details.requested.name.startsWith('play-services-ads')) {
+          ['play-services-ads', 'play-services-ads-lite', 'play-services-ads-api', 'play-services-ads-base']
+            .contains(details.requested.name)) {
         details.useVersion('${GMS_SABIT_SURUM}')
       }
     }
